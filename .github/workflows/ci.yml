@@ -1,0 +1,94 @@
+# =============================================================================
+# CI workflow — runs on every push and pull request against main.
+#
+# Two independent jobs (backend/frontend) run in parallel rather than one
+# combined job, so a frontend lint failure doesn't block the backend test
+# results (and vice versa) from being visible, and so the overall pipeline
+# finishes in however long the *slower* of the two takes, not their sum.
+# =============================================================================
+
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  backend:
+    name: Backend — Tests & Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      - name: Run migrations check
+        working-directory: backend
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.testing
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Run tests with coverage
+        working-directory: backend
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.testing
+        run: |
+          coverage run --source='.' manage.py test
+          coverage report --fail-under=80
+          coverage xml
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: backend/coverage.xml
+
+  frontend:
+    name: Frontend — Lint, Tests & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Run tests with coverage
+        working-directory: frontend
+        run: npm run test:coverage
+
+      - name: Build production bundle
+        working-directory: frontend
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: http://localhost:8000/api/v1
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/

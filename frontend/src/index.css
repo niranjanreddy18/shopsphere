@@ -1,0 +1,96 @@
+/**
+ * Global stylesheet.
+ *
+ * Tailwind's three layers (base/components/utilities) are injected here.
+ * Project-wide element defaults and a small set of hand-rolled component
+ * classes (for patterns that repeat enough to deserve a name, like `.btn`)
+ * live in the @layer blocks below rather than in tailwind.config.js plugins,
+ * keeping the whole design system readable in one file.
+ *
+ * Design refresh: buttons/cards/inputs below were restyled for a premium
+ * retail feel (softer diffuse shadows, subtle press/hover motion, deeper
+ * indigo focus rings) — every class NAME is unchanged from the original
+ * implementation, so no component using `.btn-primary`/`.card`/etc. needed
+ * to be touched to pick up the new look.
+ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply antialiased scroll-smooth;
+  }
+  body {
+    @apply bg-white text-ink-900 font-sans;
+  }
+  ::selection {
+    @apply bg-brand-200 text-brand-950;
+  }
+  /* A visible, consistent focus ring on every interactive element — kept
+     even for mouse users' clicks used to look inconsistent across native
+     elements vs. custom components; :focus-visible keeps it from showing
+     on mouse clicks while still protecting keyboard navigation. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-white;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold
+           transition-all duration-150 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98];
+  }
+  .btn-primary {
+    @apply btn bg-brand-600 text-white shadow-sm hover:bg-brand-700 hover:shadow-md focus:ring-brand-500;
+  }
+  .btn-dark {
+    /* The solid near-black CTA premium retail sites (Nike, Apple) use for
+       their single highest-priority action per screen — reserved for
+       "Buy now"/"Place order"-tier moments, not every button. */
+    @apply btn bg-ink-950 text-white shadow-sm hover:bg-ink-800 hover:shadow-md focus:ring-ink-700;
+  }
+  .btn-secondary {
+    @apply btn bg-white text-ink-800 border border-ink-200 hover:bg-ink-50 hover:border-ink-300 focus:ring-brand-500;
+  }
+  .btn-ghost {
+    @apply btn bg-transparent text-ink-700 hover:bg-ink-100 focus:ring-brand-500;
+  }
+  .btn-danger {
+    @apply btn bg-red-600 text-white shadow-sm hover:bg-red-700 hover:shadow-md focus:ring-red-500;
+  }
+  .input-field {
+    @apply block w-full rounded-xl border border-ink-200 bg-white px-3.5 py-2.5 text-sm text-ink-900
+           placeholder:text-ink-400 shadow-sm transition-colors
+           focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none;
+  }
+  .card {
+    @apply bg-white rounded-2xl shadow-card border border-ink-100 p-6;
+  }
+  .card-hover {
+    @apply transition-all duration-300 ease-out hover:shadow-card-hover hover:-translate-y-0.5;
+  }
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+  .section-heading {
+    @apply text-2xl font-bold tracking-tight text-ink-950 sm:text-3xl;
+  }
+  .link-underline {
+    @apply relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current
+           after:transition-all after:duration-200 hover:after:w-full;
+  }
+  /* Skeleton shimmer — a moving highlight sweep over a flat placeholder,
+     which reads as "actively loading" far more convincingly than a
+     static pulse alone. Combined with Tailwind's animate-pulse where a
+     softer effect is wanted (see components/ui/Skeleton.jsx). */
+  .skeleton-shimmer {
+    @apply relative overflow-hidden bg-ink-100;
+  }
+  .skeleton-shimmer::after {
+    content: "";
+    @apply absolute inset-0 -translate-x-full animate-shimmer;
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.6), transparent);
+  }
+}

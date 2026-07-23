@@ -1,0 +1,21 @@
+[run]
+source = .
+omit =
+    */migrations/*
+    */management/commands/wait_for_db.py
+    manage.py
+    config/wsgi.py
+    config/asgi.py
+    config/settings/*
+    */tests.py
+    venv/*
+    .venv/*
+
+[report]
+precision = 1
+show_missing = True
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise NotImplementedError
+    if TYPE_CHECKING:
