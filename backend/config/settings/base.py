@@ -13,7 +13,7 @@ from datetime import timedelta
 from pathlib import Path
 from corsheaders.defaults import default_headers
 from decouple import Csv, config
-
+import dj_database_url 
 # ------------------------------------------------------------------------------
 # Base paths
 # ------------------------------------------------------------------------------
@@ -107,17 +107,28 @@ ASGI_APPLICATION = "config.asgi.application"
 # PostgreSQL is used in every environment (including local dev) to avoid
 # "works on SQLite, breaks on Postgres" bugs (e.g. case sensitivity, JSONField
 # behaviour, constraint enforcement).
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": config("DB_NAME", default="ecommerce_db"),
-        "USER": config("DB_USER", default="postgres"),
-        "PASSWORD": config("DB_PASSWORD", default="postgres"),
-        "HOST": config("DB_HOST", default="localhost"),
-        "PORT": config("DB_PORT", default="5432"),
-        "CONN_MAX_AGE": 60,
+DATABASE_URL = config("DATABASE_URL", default=None)
+
+if DATABASE_URL:
+    DATABASES = {
+        "default": dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=True,
+        )
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": config("DB_NAME", default="ecommerce_db"),
+            "USER": config("DB_USER", default="postgres"),
+            "PASSWORD": config("DB_PASSWORD", default="postgres"),
+            "HOST": config("DB_HOST", default="localhost"),
+            "PORT": config("DB_PORT", default="5432"),
+            "CONN_MAX_AGE": 60,
+        }
+    }
 
 # ------------------------------------------------------------------------------
 # Custom user model
