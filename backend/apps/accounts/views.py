@@ -411,11 +411,9 @@ from django.http import JsonResponse
 from pathlib import Path
 
 def media_debug(request):
-    media = Path(settings.MEDIA_ROOT)
+    path = Path(settings.MEDIA_ROOT) / "products" / "mens_fashion" / "allen_solly_formal_shirt"
 
     return JsonResponse({
-        "MEDIA_ROOT": str(media),
-        "MEDIA_EXISTS": media.exists(),
-        "PRODUCTS_EXISTS": (media / "products").exists(),
-        "MEDIA_CONTENTS": [p.name for p in media.iterdir()] if media.exists() else [],
+        "folder_exists": path.exists(),
+        "files": [p.name for p in path.iterdir()] if path.exists() else [],
     })
