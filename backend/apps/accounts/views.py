@@ -406,3 +406,16 @@ class AdminSetUserActiveView(APIView):
 
         user = User.objects.filter(pk=user.pk).annotate(order_count=Count("orders")).first()
         return Response(AdminUserListSerializer(user).data)
+from django.conf import settings
+from django.http import JsonResponse
+from pathlib import Path
+
+def media_debug(request):
+    media = Path(settings.MEDIA_ROOT)
+
+    return JsonResponse({
+        "MEDIA_ROOT": str(media),
+        "MEDIA_EXISTS": media.exists(),
+        "PRODUCTS_EXISTS": (media / "products").exists(),
+        "MEDIA_CONTENTS": [p.name for p in media.iterdir()] if media.exists() else [],
+    })

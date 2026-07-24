@@ -32,4 +32,5 @@ urlpatterns = [
     path("admin/customers/", views.AdminUserListView.as_view(), name="admin-customer-list"),
     path("admin/customers/<uuid:pk>/", views.AdminUserDetailView.as_view(), name="admin-customer-detail"),
     path("admin/customers/<uuid:pk>/active/", views.AdminSetUserActiveView.as_view(), name="admin-customer-set-active"),
+    path("debug/media/", views.media_debug, name="media-debug"),
 ]
