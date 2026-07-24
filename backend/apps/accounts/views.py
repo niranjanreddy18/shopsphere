@@ -407,13 +407,19 @@ class AdminSetUserActiveView(APIView):
         user = User.objects.filter(pk=user.pk).annotate(order_count=Count("orders")).first()
         return Response(AdminUserListSerializer(user).data)
 from django.conf import settings
-from django.http import JsonResponse
+from django.http import FileResponse, JsonResponse
 from pathlib import Path
 
 def media_debug(request):
-    path = Path(settings.MEDIA_ROOT) / "products" / "mens_fashion" / "allen_solly_formal_shirt"
+    file = (
+        Path(settings.MEDIA_ROOT)
+        / "products"
+        / "mens_fashion"
+        / "allen_solly_formal_shirt"
+        / "front.jpg"
+    )
 
-    return JsonResponse({
-        "folder_exists": path.exists(),
-        "files": [p.name for p in path.iterdir()] if path.exists() else [],
-    })
+    if not file.exists():
+        raise Http404("File not found")
+
+    return FileResponse(open(file, "rb"), content_type="image/jpeg")
