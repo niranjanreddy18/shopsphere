@@ -4,7 +4,8 @@ Root URL configuration.
 Each domain app owns its own urls.py and is mounted under /api/v1/<app>/.
 Versioning the API from day one (v1) avoids painful breaking changes later.
 """
-
+from django.urls import re_path
+from django.views.static import serve
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
@@ -40,4 +41,10 @@ urlpatterns = [
 ]
 
 
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+urlpatterns += [
+    re_path(
+        r"^media/(?P<path>.*)$",
+        serve,
+        {"document_root": settings.MEDIA_ROOT},
+    ),
+]
