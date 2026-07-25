@@ -409,17 +409,10 @@ class AdminSetUserActiveView(APIView):
 from django.conf import settings
 from django.http import FileResponse, JsonResponse
 from pathlib import Path
-
+from django.urls import get_resolver
 def media_debug(request):
-    file = (
-        Path(settings.MEDIA_ROOT)
-        / "products"
-        / "mens_fashion"
-        / "allen_solly_formal_shirt"
-        / "front.jpg"
-    )
-
-    if not file.exists():
-        raise Http404("File not found")
-
-    return FileResponse(open(file, "rb"), content_type="image/jpeg")
+    
+    patterns = [str(p.pattern) for p in get_resolver().url_patterns]
+    return JsonResponse({
+        "patterns": patterns
+    })
