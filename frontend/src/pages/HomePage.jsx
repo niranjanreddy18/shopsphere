@@ -39,29 +39,87 @@ export default function HomePage() {
         <CategoryGrid />
       </section>
 
-      <ProductCollectionSection
-        title="Featured Products"
-        subtitle="Hand-picked picks our team loves right now"
-        viewAllHref="/products?is_featured=true"
-        products={featured.items}
-        status={featured.status}
-      />
+      {(() => {
+        // Deduplicate products so the same product doesn't appear in
+        // multiple home collections. Priority order: featured, trending, latest.
+        const featuredList = featured.items || [];
+        const seen = new Set(featuredList.map((p) => p.id));
 
-      <ProductCollectionSection
-        title="Trending Now"
-        subtitle="What everyone else is buying"
-        viewAllHref="/products?ordering=-sold_count"
-        products={bestSellers.items}
-        status={bestSellers.status}
-      />
+        // Build trending list with a goal of showing a full row (4) or two
+        // rows (8). Prefer unique items (not present in `featuredList`). If
+        // there aren't enough unique items, fill to 4 by allowing duplicates
+        // from the original bestSellers list as a last resort so the UI keeps
+        // a consistent grid layout.
+        const bestItems = bestSellers.items || [];
+        const trendingUnique = [];
+        for (const p of bestItems) {
+          if (!seen.has(p.id)) {
+            trendingUnique.push(p);
+            seen.add(p.id);
+          }
+          if (trendingUnique.length >= 8) break;
+        }
 
-      <ProductCollectionSection
-        title="Latest Arrivals"
-        subtitle="Fresh off the shelf"
-        viewAllHref="/products?ordering=-created_at"
-        products={newArrivals.items}
-        status={newArrivals.status}
-      />
+        let trendingList = trendingUnique.slice(0, 8);
+        if (trendingList.length >= 8) {
+          // keep 8
+        } else if (trendingList.length >= 4) {
+          // show a single full row (4)
+          trendingList = trendingList.slice(0, 4);
+        } else if (trendingList.length > 0) {
+          // try to fill to 4 by taking from bestItems (allow duplicates only
+          // if necessary). We prefer preserving uniqueness but ensure layout.
+          const needed = 4 - trendingList.length;
+          const filler = [];
+          for (const p of bestItems) {
+            if (filler.length >= needed) break;
+            // skip if already included in trendingList at same id
+            if (trendingList.find((t) => t.id === p.id)) continue;
+            filler.push(p);
+          }
+          trendingList = trendingList.concat(filler).slice(0, 4);
+        } else {
+          // nothing unique found — fall back to first 4 bestSellers so the
+          // section renders a full row rather than 0/odd count
+          trendingList = bestItems.slice(0, 4);
+          // mark their ids as seen so later sections don't re-add them
+          for (const p of trendingList) seen.add(p.id);
+        }
+
+        const latestList = (newArrivals.items || []).filter((p) => {
+          if (seen.has(p.id)) return false;
+          seen.add(p.id);
+          return true;
+        });
+
+        return (
+          <>
+            <ProductCollectionSection
+              title="Featured Products"
+              subtitle="Hand-picked picks our team loves right now"
+              viewAllHref="/products?is_featured=true"
+              products={featuredList}
+              status={featured.status}
+            />
+
+            <ProductCollectionSection
+              title="Trending Now"
+              subtitle="What everyone else is buying"
+              viewAllHref="/products?ordering=-sold_count"
+              products={trendingList}
+              status={bestSellers.status}
+            />
+
+            <ProductCollectionSection
+              title="Latest Arrivals"
+              subtitle="Fresh off the shelf"
+              viewAllHref="/products?ordering=-created_at"
+              products={latestList}
+              status={newArrivals.status}
+            />
+          </>
+        );
+      })()}
 
       <section>
         <div className="mb-6 text-center">

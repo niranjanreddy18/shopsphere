@@ -11,7 +11,7 @@ import { adminCategoriesApi } from "../../../api/adminApi";
 import Button from "../../../components/ui/Button";
 import { Skeleton } from "../../../components/ui/Skeleton";
 
-const EMPTY = { name: "", description: "", parent: "", is_active: true, display_order: 0 };
+const EMPTY = { name: "", description: "", parent: "", is_active: true, display_order: 0, image: null };
 
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState([]);
@@ -35,14 +35,21 @@ export default function AdminCategoriesPage() {
   const openEdit = (category) => {
     setFormData({
       name: category.name, description: category.description || "", parent: category.parent || "",
-      is_active: category.is_active, display_order: category.display_order,
+      is_active: category.is_active, display_order: category.display_order, image: null,
     });
     setFormMode(category);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const payload = { ...formData, parent: formData.parent || null };
+    const payload = new FormData();
+    payload.append("name", formData.name);
+    payload.append("description", formData.description || "");
+    payload.append("parent", formData.parent || "");
+    payload.append("is_active", formData.is_active ? "true" : "false");
+    payload.append("display_order", String(formData.display_order));
+    if (formData.image) payload.append("image", formData.image);
+
     try {
       if (formMode === "create") await adminCategoriesApi.create(payload);
       else await adminCategoriesApi.update(formMode.slug, payload);
@@ -76,6 +83,7 @@ export default function AdminCategoriesPage() {
         <form onSubmit={handleSubmit} className="card mb-6 space-y-3">
           <input required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Name" className="input-field" />
           <textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Description" className="input-field" rows={2} />
+          <input type="file" accept="image/*" onChange={(e) => setFormData({ ...formData, image: e.target.files?.[0] || null })} className="input-field" />
           <select value={formData.parent} onChange={(e) => setFormData({ ...formData, parent: e.target.value })} className="input-field">
             <option value="">No parent (top-level category)</option>
             {categories.filter((c) => c.id !== formMode?.id).map((c) => (

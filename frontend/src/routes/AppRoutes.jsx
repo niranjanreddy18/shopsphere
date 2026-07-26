@@ -37,6 +37,7 @@ import ProfileLayout from "../layouts/ProfileLayout";
 
 import ProtectedRoute from "../components/common/ProtectedRoute";
 import PublicOnlyRoute from "../components/common/PublicOnlyRoute";
+import ScrollToTop from "../components/common/ScrollToTop";
 import { FullPageSpinner } from "../components/ui/Spinner";
 
 import HomePage from "../pages/HomePage";
@@ -83,6 +84,7 @@ const AdminCustomersPage = lazy(() => import("../features/admin/pages/AdminCusto
 export default function AppRoutes() {
   return (
     <Suspense fallback={<FullPageSpinner />}>
+      <ScrollToTop />
       <Routes>
         <Route element={<MainLayout />}>
           <Route path={ROUTES.HOME} element={<HomePage />} />
@@ -124,6 +126,7 @@ export default function AppRoutes() {
             <Route path="/orders/:id" element={<OrderDetailPage />} />
             <Route path="/orders/:id/pay" element={<PaymentPage />} />
             <Route path="/orders/:id/success" element={<OrderSuccessPage />} />
+            <Route path="/payment-success" element={<OrderSuccessPage />} />
 
             <Route element={<ProfileLayout />}>
               <Route path={ROUTES.PROFILE} element={<ProfilePage />} />

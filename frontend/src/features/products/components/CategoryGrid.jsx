@@ -10,7 +10,6 @@ import { Link } from "react-router-dom";
 
 import { useAppDispatch, useAppSelector } from "../../../app/store/hooks";
 import { fetchCategories } from "../productSlice";
-import { getCategoryImageUrl } from "../../../utils/categoryImages";
 import { Skeleton } from "../../../components/ui/Skeleton";
 
 export default function CategoryGrid() {
@@ -41,7 +40,7 @@ export default function CategoryGrid() {
         >
           <span className="relative block aspect-square w-full overflow-hidden rounded-2xl bg-ink-100 shadow-card transition-shadow group-hover:shadow-card-hover">
             <img
-              src={getCategoryImageUrl(category.name)}
+              src={category.image || "/images/categories/Smartphones.jpg"}
               alt=""
               loading="lazy"
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"

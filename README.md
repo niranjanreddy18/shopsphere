@@ -101,6 +101,7 @@ Create local environment files using the example files provided in the repositor
 
 ### Frontend
 - VITE_API_BASE_URL
+- VITE_FRONTEND_BASE_URL
 - VITE_STRIPE_PUBLISHABLE_KEY
 
 ## Running the Project

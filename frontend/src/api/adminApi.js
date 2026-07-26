@@ -22,8 +22,14 @@ export const adminProductsApi = {
 
 export const adminCategoriesApi = {
   list: () => axiosClient.get("/products/categories/").then((res) => res.data),
-  create: (payload) => axiosClient.post("/products/categories/", payload).then((res) => res.data),
-  update: (slug, payload) => axiosClient.patch(`/products/categories/${slug}/`, payload).then((res) => res.data),
+  create: (payload) =>
+    axiosClient.post("/products/categories/", payload, {
+      headers: payload instanceof FormData ? { "Content-Type": "multipart/form-data" } : undefined,
+    }).then((res) => res.data),
+  update: (slug, payload) =>
+    axiosClient.patch(`/products/categories/${slug}/`, payload, {
+      headers: payload instanceof FormData ? { "Content-Type": "multipart/form-data" } : undefined,
+    }).then((res) => res.data),
   remove: (slug) => axiosClient.delete(`/products/categories/${slug}/`).then((res) => res.data),
 };
 
