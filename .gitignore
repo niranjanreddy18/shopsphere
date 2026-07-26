@@ -51,7 +51,7 @@ pip-selfcheck.json
 *.db
 db.sqlite3
 db.sqlite3-journal
-media/
+
 uploads/
 staticfiles/
 *.log
