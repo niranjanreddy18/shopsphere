@@ -18,14 +18,15 @@ class CategorySerializer(serializers.ModelSerializer):
 
     children = serializers.SerializerMethodField()
     product_count = serializers.SerializerMethodField()
+    image = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = Category
         fields = [
             "id", "name", "slug", "description", "image", "parent",
-            "is_active", "display_order", "children", "product_count", "created_at",
+            "is_active", "display_order", "children", "product_count", "created_at", "updated_at",
         ]
-        read_only_fields = ["id", "slug", "created_at"]
+        read_only_fields = ["id", "slug", "created_at", "updated_at"]
 
     @extend_schema_field(serializers.ListField(child=serializers.DictField()))
     def get_children(self, obj):
@@ -33,16 +34,34 @@ class CategorySerializer(serializers.ModelSerializer):
         # rather than serialising the entire tree on every request.
         return CategorySerializer(obj.children.filter(is_active=True), many=True, context=self.context).data
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if data.get("image"):
+            request = self.context.get("request")
+            url = instance.image.url
+            data["image"] = request.build_absolute_uri(url) if request and url.startswith("/") else url
+        return data
+
     @extend_schema_field(serializers.IntegerField())
     def get_product_count(self, obj):
         return obj.products.filter(is_active=True).count()
 
 
 class BrandSerializer(serializers.ModelSerializer):
+    logo = serializers.SerializerMethodField()
+
     class Meta:
         model = Brand
-        fields = ["id", "name", "slug", "description", "logo", "is_active", "created_at"]
-        read_only_fields = ["id", "slug", "created_at"]
+        fields = ["id", "name", "slug", "description", "logo", "is_active", "created_at", "updated_at"]
+        read_only_fields = ["id", "slug", "created_at", "updated_at"]
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_logo(self, obj):
+        if not obj.logo:
+            return None
+        request = self.context.get("request")
+        url = obj.logo.url
+        return request.build_absolute_uri(url) if request and url.startswith("/") else url
 
 
 class ProductImageSerializer(serializers.ModelSerializer):

@@ -3,7 +3,8 @@
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import RequestFactory, TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -12,6 +13,7 @@ from apps.accounts.models import User
 from core.exceptions import ApplicationError
 
 from .models import Brand, Category, Inventory, Product, ProductImage, StockMovement
+from .serializers import CategorySerializer
 from .services import InventoryService, ProductService
 
 
@@ -58,6 +60,19 @@ class ProductModelTests(TestCase):
         child = Category.objects.create(name="Laptops", parent=parent)
         self.assertEqual(child.parent, parent)
         self.assertIn(child, parent.children.all())
+
+
+class CategorySerializerTests(TestCase):
+    def test_category_serializer_returns_absolute_image_url(self):
+        image = SimpleUploadedFile(
+            "electronics.png",
+            b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc`\x00\x00\x00\x02\x00\x01\xe2!\xbc3\x00\x00\x00\x00IEND\xaeB`\x82",
+            content_type="image/png",
+        )
+        category = Category.objects.create(name="Electronics", image=image)
+        serializer = CategorySerializer(category, context={"request": RequestFactory().get("/")})
+
+        self.assertTrue(serializer.data["image"].startswith("http://testserver/"))
 
 
 class ProductImageModelTests(TestCase):

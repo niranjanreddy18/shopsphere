@@ -20,7 +20,9 @@ Usage:
 import random
 from datetime import timedelta
 from decimal import Decimal
+from pathlib import Path
 
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
@@ -43,6 +45,7 @@ CATEGORY_NAMES = CATALOG["categories"]
 BRAND_NAMES = CATALOG["brands"]
 PRODUCT_SEEDS = CATALOG["products"]
 IMAGE_ROOT = CATALOG["image_root"]
+CATEGORY_IMAGE_ROOT = Path(settings.BASE_DIR) / "media" / "categories"
 
 ADJECTIVES = [
     "Pro", "Elite", "Ultra", "Max", "Air", "Lite", "Plus", "Prime", "Studio",
@@ -163,21 +166,86 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f"Ensured {len(customers)} customer accounts."))
         return customers
 
+    def _find_category_image(self, name: str, slug: str) -> str | None:
+        exact_paths = [
+            CATEGORY_IMAGE_ROOT / f"{name}.jpg",
+            CATEGORY_IMAGE_ROOT / f"{slug}.jpg",
+        ]
+        for path in exact_paths:
+            if path.exists():
+                return f"categories/{path.name}"
+
+        for path in CATEGORY_IMAGE_ROOT.iterdir():
+            if path.is_file() and path.suffix.lower() == ".jpg":
+                if path.stem.lower() in {name.lower(), slug.lower()}:
+                    return f"categories/{path.name}"
+        return None
+
     def _seed_categories(self) -> dict:
         categories = {}
+
         for name in CATEGORY_NAMES:
-            category, _ = Category.objects.get_or_create(name=name)
+            slug = name.lower().replace(" & ", "-").replace("'", "").replace(" ", "-")
+            image_file = self._find_category_image(name, slug)
+
+            category, created = Category.objects.get_or_create(
+                name=name,
+                defaults={
+                    "slug": slug,
+                    "description": f"{name} collection",
+                    "image": image_file,
+                },
+            )
+
+            if image_file and (created or not category.image):
+                category.image = image_file
+                category.save(update_fields=["image"])
+
             categories[name] = category
+
         self.stdout.write(self.style.SUCCESS(f"Ensured {len(categories)} categories."))
         return categories
 
     def _seed_brands(self) -> dict:
         brands = {}
+        brand_logo_dir = Path(settings.BASE_DIR) / "frontend" / "public" / "images" / "brands"
         for name in BRAND_NAMES:
-            brand, _ = Brand.objects.get_or_create(name=name)
+            slug = slugify(name)
+            brand, created = Brand.objects.get_or_create(
+                name=name,
+                defaults={
+                    "slug": slug,
+                    "description": f"{name} brand",
+                },
+            )
+
+            if created or not brand.logo:
+                logo_path = self._find_brand_logo(name, slug, brand_logo_dir)
+                if logo_path:
+                    brand.logo = logo_path
+                    brand.save(update_fields=["logo"])
+
             brands[name] = brand
         self.stdout.write(self.style.SUCCESS(f"Ensured {len(brands)} brands."))
         return brands
+
+    def _find_brand_logo(self, name: str, slug: str, logo_dir: Path):
+        if not logo_dir.exists():
+            return None
+
+        candidate_names = {
+            name.lower().replace(" & ", " ").replace("'", "").replace(".", "").replace(" ", "-"):
+                None,
+            slug.lower(): None,
+        }
+
+        for path in logo_dir.iterdir():
+            if not path.is_file():
+                continue
+            base = path.stem.lower().replace(" & ", " ").replace("'", "").replace(".", "").replace(" ", "-")
+            if base in candidate_names:
+                return path
+        return None
 
     def _seed_products(self, categories: dict, brands: dict, *, target_count: int) -> list:
         """Create products from the static catalog module.
@@ -318,7 +386,7 @@ class Command(BaseCommand):
             address = Address.objects.filter(user=customer).first()
             if not address:
                 continue
-
+            
             cart, _ = Cart.objects.get_or_create(user=customer)
             cart.items.all().delete()  # start from a clean cart for each seeded order
 
@@ -327,7 +395,7 @@ class Command(BaseCommand):
                 if available < 1:
                     continue
                 CartItem.objects.create(cart=cart, product=product, quantity=min(random.randint(1, 2), available))
-
+            
             if not cart.items.exists():
                 continue
 
