@@ -7,6 +7,8 @@
  */
 
 import { Link } from "react-router-dom";
+import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { LayoutDashboard, LogOut, User, X } from "lucide-react";
 
 import { ROUTES } from "../../constants/routes";
@@ -14,12 +16,21 @@ import { ROUTES } from "../../constants/routes";
 export default function MobileMenu({ isOpen, onClose, isAuthenticated, isAdmin, onLogout }) {
   if (!isOpen) return null;
 
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    // Prevent background scrolling while the mobile menu is open
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
   const linkClass = "flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-700 hover:bg-ink-50";
 
-  return (
-    <div className="fixed inset-0 z-50 sm:hidden">
+  return createPortal(
+    <div className="fixed inset-0 sm:hidden" role="dialog" aria-modal="true" style={{ zIndex: 9999 }}>
       <div className="absolute inset-0 bg-ink-950/50" onClick={onClose} aria-hidden="true" />
-      <div className="absolute right-0 top-0 h-full w-72 animate-slide-up bg-white p-4 shadow-card-hover">
+      <div className="absolute left-0 top-0 h-full w-72 max-w-full animate-slide-up bg-white p-4 shadow-card-hover overflow-auto">
         <div className="mb-4 flex items-center justify-between">
           <span className="text-lg font-bold text-ink-950">Menu</span>
           <button onClick={onClose} aria-label="Close menu" className="rounded-full p-1.5 hover:bg-ink-100">
@@ -60,6 +71,7 @@ export default function MobileMenu({ isOpen, onClose, isAuthenticated, isAdmin, 
           )}
         </nav>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
