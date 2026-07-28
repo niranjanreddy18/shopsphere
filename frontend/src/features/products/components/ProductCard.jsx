@@ -56,7 +56,7 @@ export default function ProductCard({ product }) {
     <>
       <Link
         to={`/products/${product.slug}`}
-        className="card card-hover group relative flex flex-col overflow-hidden p-0"
+        className="card card-hover group relative flex h-full flex-col overflow-hidden p-0"
       >
         {/* --- Image + floating badges/actions ------------------------- */}
         <div className="relative aspect-square w-full overflow-hidden bg-ink-50">
@@ -97,9 +97,9 @@ export default function ProductCard({ product }) {
           <button
             onClick={handleQuickView}
             className="absolute inset-x-3 bottom-3 z-10 flex items-center justify-center gap-1.5 rounded-full
-                       bg-white/95 py-2 text-xs font-semibold text-ink-800 opacity-0 shadow-sm backdrop-blur
-                       transition-all duration-200 hover:bg-white group-hover:opacity-100 sm:translate-y-2
-                       sm:group-hover:translate-y-0"
+                       bg-white/95 py-2 text-xs font-semibold text-ink-800 shadow-sm backdrop-blur
+                       transition-all duration-200 hover:bg-white opacity-100 md:opacity-0 md:group-hover:opacity-100 md:translate-y-2
+                       md:group-hover:translate-y-0"
           >
             <Eye className="h-3.5 w-3.5" /> Quick View
           </button>
@@ -112,7 +112,7 @@ export default function ProductCard({ product }) {
         </div>
 
         {/* --- Details ---------------------------------------------------- */}
-        <div className="flex flex-1 flex-col gap-1 p-4">
+        <div className="flex flex-1 flex-col gap-1 p-4 md:p-4">
           {product.brand_name && (
             <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-400">{product.brand_name}</p>
           )}

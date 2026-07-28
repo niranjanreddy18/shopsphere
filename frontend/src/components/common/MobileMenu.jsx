@@ -30,7 +30,7 @@ export default function MobileMenu({ isOpen, onClose, isAuthenticated, isAdmin, 
   return createPortal(
     <div className="fixed inset-0 sm:hidden" role="dialog" aria-modal="true" style={{ zIndex: 9999 }}>
       <div className="absolute inset-0 bg-ink-950/50" onClick={onClose} aria-hidden="true" />
-      <div className="absolute left-0 top-0 h-full w-72 max-w-full animate-slide-up bg-white p-4 shadow-card-hover overflow-auto">
+      <div className="absolute left-0 top-0 h-full w-72 max-w-[90vw] animate-slide-up bg-white p-4 shadow-card-hover overflow-auto">
         <div className="mb-4 flex items-center justify-between">
           <span className="text-lg font-bold text-ink-950">Menu</span>
           <button onClick={onClose} aria-label="Close menu" className="rounded-full p-1.5 hover:bg-ink-100">

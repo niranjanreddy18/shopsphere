@@ -25,7 +25,7 @@ export default function BrandStrip() {
 
   if (status === "loading" || status === "idle") {
     return (
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
         {Array.from({ length: 6 }).map((_, i) => (
           <Skeleton key={i} className="h-20 rounded-xl" />
         ))}
@@ -34,7 +34,7 @@ export default function BrandStrip() {
   }
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
       {items.slice(0, 12).map((brand) =>
         brand.logo ? (
           <Link key={brand.id} to={`/products?brand=${brand.slug}`} className="card card-hover flex h-20 items-center justify-center !p-3">

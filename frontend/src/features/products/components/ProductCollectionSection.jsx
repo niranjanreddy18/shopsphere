@@ -6,7 +6,7 @@
  */
 
 import { Link } from "react-router-dom";
-
+import ProductCard from "./ProductCard";
 import ProductGrid from "./ProductGrid";
 
 export default function ProductCollectionSection({ title, subtitle, viewAllHref, products, status }) {
@@ -21,6 +21,7 @@ export default function ProductCollectionSection({ title, subtitle, viewAllHref,
           View all →
         </Link>
       </div>
+
       <ProductGrid products={products} status={status} emptyMessage="Nothing here yet — check back soon." />
     </section>
   );

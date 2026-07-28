@@ -86,6 +86,21 @@ export default function AppRoutes() {
     <Suspense fallback={<FullPageSpinner />}>
       <ScrollToTop />
       <Routes>
+        {/* --- Public-only auth pages (standalone shell, no header/footer) --- */}
+        <Route element={<PublicOnlyRoute />}>
+          <Route element={<AuthLayout />}>
+            <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+            <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
+            <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
+            <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
+          </Route>
+        </Route>
+
+        {/* --- Email verification: accessible whether logged in or not ---- */}
+        <Route element={<AuthLayout />}>
+          <Route path={ROUTES.VERIFY_EMAIL} element={<VerifyEmailPage />} />
+        </Route>
+
         <Route element={<MainLayout />}>
           <Route path={ROUTES.HOME} element={<HomePage />} />
 
@@ -101,21 +116,6 @@ export default function AppRoutes() {
           <Route path="/categories/:slug" element={<CategoryPage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/cart" element={<CartPage />} />
-
-          {/* --- Public-only auth pages (centred card layout) --------------- */}
-          <Route element={<PublicOnlyRoute />}>
-            <Route element={<AuthLayout />}>
-              <Route path={ROUTES.LOGIN} element={<LoginPage />} />
-              <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
-              <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
-              <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
-            </Route>
-          </Route>
-
-          {/* --- Email verification: accessible whether logged in or not ---- */}
-          <Route element={<AuthLayout />}>
-            <Route path={ROUTES.VERIFY_EMAIL} element={<VerifyEmailPage />} />
-          </Route>
 
           {/* --- Authenticated-only pages ------------------------------------ */}
           <Route element={<ProtectedRoute />}>

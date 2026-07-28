@@ -27,7 +27,7 @@ export default function Hero() {
         <div className="absolute left-4 bottom-4 sm:left-8 sm:bottom-8 lg:left-12 lg:bottom-12 flex items-center">
           <Link
             to="/collections"
-            className="inline-flex items-center gap-3 rounded-full border border-white/30 bg-transparent px-6 sm:px-8 py-2.5 sm:py-3 text-base sm:text-lg font-semibold text-white shadow-sm hover:bg-white/5 transition-transform"
+            className="inline-flex min-w-0 items-center gap-3 rounded-full border border-white/30 bg-transparent px-5 sm:px-8 py-2.5 sm:py-3 text-sm sm:text-base font-semibold text-white shadow-sm hover:bg-white/5 transition-transform"
           >
             Explore Collections <ArrowRight className="h-4 w-4 text-white" />
           </Link>

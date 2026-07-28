@@ -111,7 +111,7 @@ export default function ProductDetailsPage() {
           {product.short_description && <p className="mt-4 text-ink-600">{product.short_description}</p>}
 
           {product.is_in_stock && (
-            <div className="mt-5 flex items-center gap-3">
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
               <label htmlFor="quantity" className="text-sm font-medium text-ink-700">Qty</label>
               <select
                 id="quantity"

@@ -152,18 +152,20 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-ink-100 bg-white/90 backdrop-blur-md">
-      <div className="container flex h-16 items-center gap-4">
-        <button
-          onClick={() => setIsMobileMenuOpen(true)}
-          className="rounded-lg p-2 text-ink-600 hover:bg-ink-100 sm:hidden"
-          aria-label="Open menu"
-        >
-          <Menu className="h-5 w-5" />
-        </button>
+      <div className="container flex h-16 items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="rounded-lg p-2 text-ink-600 hover:bg-ink-100 sm:hidden"
+            aria-label="Open menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
 
-        <Link to={ROUTES.HOME} className="shrink-0 text-xl font-extrabold tracking-tight text-ink-950">
-          Shop<span className="text-brand-600">Sphere</span>
-        </Link>
+          <Link to={ROUTES.HOME} className="shrink-0 text-xl font-extrabold tracking-tight text-ink-950">
+            Shop<span className="text-brand-600">Sphere</span>
+          </Link>
+        </div>
 
         <div className="hidden items-center gap-5 md:flex">
           <CategoriesDropdown />
@@ -176,22 +178,7 @@ export default function Header() {
           )}
         </div>
 
-        <SearchBar className="ml-auto hidden max-w-md flex-1 lg:block" />
-
-        <div className="ml-auto flex items-center gap-1 sm:gap-2 lg:ml-4">
-          {isAuthenticated && <NotificationBell />}
-
-          {isAuthenticated && (
-            <Link to="/wishlist" className="relative rounded-full p-2 text-ink-600 hover:bg-ink-100" aria-label={`Wishlist${wishlistCount ? ` (${wishlistCount} items)` : ""}`}>
-              <Heart className="h-5 w-5" />
-              {wishlistCount > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-brand-600 text-[10px] font-semibold text-white">
-                  {wishlistCount > 9 ? "9+" : wishlistCount}
-                </span>
-              )}
-            </Link>
-          )}
-
+        <div className="flex items-center gap-2 lg:gap-3">
           <Link to="/cart" className="relative rounded-full p-2 text-ink-600 hover:bg-ink-100" aria-label={`Cart${cartItemCount ? ` (${cartItemCount} items)` : ""}`}>
             <ShoppingCart className="h-5 w-5" />
             {cartItemCount > 0 && (
@@ -201,14 +188,27 @@ export default function Header() {
             )}
           </Link>
 
-          {isAuthenticated ? (
-            <ProfileMenu user={user} onLogout={handleLogout} />
-          ) : (
-            <div className="hidden items-center gap-2 sm:flex">
-              <Link to={ROUTES.LOGIN} className="btn-ghost">Login</Link>
-              <Link to={ROUTES.REGISTER} className="btn-dark">Sign Up</Link>
-            </div>
-          )}
+          <div className="hidden sm:flex items-center gap-2 lg:ml-4">
+            {isAuthenticated && <NotificationBell />}
+            {isAuthenticated && (
+              <Link to="/wishlist" className="relative rounded-full p-2 text-ink-600 hover:bg-ink-100" aria-label={`Wishlist${wishlistCount ? ` (${wishlistCount} items)` : ""}`}>
+                <Heart className="h-5 w-5" />
+                {wishlistCount > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-brand-600 text-[10px] font-semibold text-white">
+                    {wishlistCount > 9 ? "9+" : wishlistCount}
+                  </span>
+                )}
+              </Link>
+            )}
+            {isAuthenticated ? (
+              <ProfileMenu user={user} onLogout={handleLogout} />
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link to={ROUTES.LOGIN} className="btn-ghost">Login</Link>
+                <Link to={ROUTES.REGISTER} className="btn-dark">Sign Up</Link>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

@@ -34,6 +34,13 @@
   :focus-visible {
     @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-white;
   }
+
+  img,
+  picture,
+  video,
+  iframe {
+    @apply max-w-full h-auto;
+  }
 }
 
 @layer components {

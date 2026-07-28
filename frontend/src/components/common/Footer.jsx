@@ -52,8 +52,8 @@ export default function Footer() {
   return (
     <footer className="mt-auto bg-ink-950 text-ink-300">
       <div className="container py-14">
-        <div className="grid grid-cols-2 gap-10 sm:grid-cols-3 lg:grid-cols-5">
-          <div className="col-span-2 lg:col-span-2">
+        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="sm:col-span-2 lg:col-span-2">
             <Link to="/" className="text-xl font-extrabold tracking-tight text-white">
               Shop<span className="text-brand-400">Sphere</span>
             </Link>
