@@ -18,7 +18,7 @@ python manage.py wait_for_db
 echo "Applying database migrations..."
 python manage.py migrate --noinput
 #echo "passing data to database"
-#python manage.py seed_data
+python manage.py seed_data
 
 echo "Collecting static files..."
 python manage.py collectstatic --noinput --clear
