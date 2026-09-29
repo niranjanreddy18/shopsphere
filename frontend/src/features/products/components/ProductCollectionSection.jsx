@@ -6,12 +6,11 @@
  */
 
 import { Link } from "react-router-dom";
-import ProductCard from "./ProductCard";
 import ProductGrid from "./ProductGrid";
 
 export default function ProductCollectionSection({ title, subtitle, viewAllHref, products, status }) {
   return (
-    <section className="mb-14">
+    <section className="mb-14 [content-visibility:auto] [contain-intrinsic-size:auto_500px]">
       <div className="mb-5 flex items-end justify-between">
         <div>
           <h2 className="section-heading">{title}</h2>

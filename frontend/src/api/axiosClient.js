@@ -37,6 +37,15 @@ axiosClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // GET and HEAD requests carry no request body. Removing Content-Type avoids
+    // triggering CORS OPTIONS preflight requests on cross-origin read requests.
+    const method = config.method?.toLowerCase();
+    if ((method === "get" || method === "head") && config.headers) {
+      delete config.headers["Content-Type"];
+      if (typeof config.headers.delete === "function") {
+        config.headers.delete("Content-Type");
+      }
+    }
     return config;
   },
   (error) => Promise.reject(error)

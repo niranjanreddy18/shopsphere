@@ -25,7 +25,11 @@ import StarRating from "../../../components/ui/StarRating";
 import DeliveryEstimate from "../../../components/ui/DeliveryEstimate";
 import QuickViewModal from "./QuickViewModal";
 
-export default function ProductCard({ product }) {
+export default function ProductCard({
+  product,
+  loading = "lazy",
+  decoding = "async",
+}) {
   const dispatch = useAppDispatch();
   const { isAuthenticated } = useAuth();
   const wishlistItems = useAppSelector((state) => state.wishlist.items);
@@ -64,7 +68,10 @@ export default function ProductCard({ product }) {
             <img
               src={product.primary_image}
               alt={product.name}
-              loading="lazy"
+              loading={loading}
+              decoding={decoding}
+              width="400"
+              height="400"
               className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
             />
           ) : (

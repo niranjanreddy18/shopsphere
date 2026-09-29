@@ -14,16 +14,17 @@ import { LayoutDashboard, LogOut, User, X } from "lucide-react";
 import { ROUTES } from "../../constants/routes";
 
 export default function MobileMenu({ isOpen, onClose, isAuthenticated, isAdmin, onLogout }) {
-  if (!isOpen) return null;
-
   useEffect(() => {
+    if (!isOpen) return;
     const prev = document.body.style.overflow;
     // Prevent background scrolling while the mobile menu is open
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prev;
     };
-  }, []);
+  }, [isOpen]);
+
+  if (!isOpen) return null;
 
   const linkClass = "flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-700 hover:bg-ink-50";
 

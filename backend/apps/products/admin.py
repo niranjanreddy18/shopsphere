@@ -2,7 +2,7 @@
 
 from django.contrib import admin
 
-from .models import Brand, Category, Inventory, Product, ProductImage, StockMovement
+from .models import Brand, Category, Inventory, Product, ProductImage, SiteConfiguration, StockMovement
 
 
 class ProductImageInline(admin.TabularInline):
@@ -44,3 +44,9 @@ class StockMovementAdmin(admin.ModelAdmin):
     list_filter = ["movement_type"]
     search_fields = ["product__name", "product__sku"]
     readonly_fields = ["product", "movement_type", "quantity_change", "quantity_after", "reason"]
+
+
+@admin.register(SiteConfiguration)
+class SiteConfigurationAdmin(admin.ModelAdmin):
+    list_display = ["__str__", "banner", "updated_at"]
+

@@ -38,7 +38,13 @@ export default function BrandStrip() {
       {items.slice(0, 12).map((brand) =>
         brand.logo ? (
           <Link key={brand.id} to={`/products?brand=${brand.slug}`} className="card card-hover flex h-20 items-center justify-center !p-3">
-            <img src={brand.logo} alt={brand.name} className="max-h-10 max-w-full object-contain" />
+            <img
+              src={brand.logo}
+              alt={brand.name}
+              loading="lazy"
+              decoding="async"
+              className="max-h-10 max-w-full object-contain"
+            />
           </Link>
         ) : (
           <Link

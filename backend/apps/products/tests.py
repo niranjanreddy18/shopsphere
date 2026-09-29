@@ -296,3 +296,20 @@ class ProductAPITests(APITestCase):
             {"quantity_change": 10, "movement_type": "RESTOCK"},
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_product_list_query_count_avoids_n_plus_one_inventory(self):
+        for i in range(10):
+            _make_product(self.category, name=f"Bulk Product {i}", brand=self.brand, stock=10)
+        with self.assertNumQueries(3):
+            response = self.client.get(reverse("products:product-list-create"))
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.data["count"], 11)
+
+    def test_category_list_query_count_avoids_n_plus_one(self):
+        for i in range(5):
+            cat = Category.objects.create(name=f"Parent Category {i}")
+            for j in range(2):
+                Category.objects.create(name=f"Child Category {i}-{j}", parent=cat)
+        with self.assertNumQueries(4):
+            response = self.client.get(reverse("products:category-list-create"))
+            self.assertEqual(response.status_code, status.HTTP_200_OK)

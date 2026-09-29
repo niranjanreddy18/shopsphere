@@ -5,7 +5,7 @@ Views stay thin: queryset assembly + filtering wiring + calling services.py
 for anything that mutates state (stock adjustments, image ordering, etc).
 """
 
-from django.db.models import Avg, Count, Q
+from django.db.models import Avg, Count, Prefetch, Q
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -16,7 +16,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .filters import ProductFilter
-from .models import Brand, Category, Inventory, Product, ProductImage, StockMovement
+from .models import Brand, Category, Inventory, Product, ProductImage, SiteConfiguration, StockMovement
 from .permissions import IsAdminOrReadOnly
 from .serializers import (
     BrandSerializer,
@@ -26,6 +26,7 @@ from .serializers import (
     ProductImageSerializer,
     ProductListSerializer,
     ProductWriteSerializer,
+    SiteConfigurationSerializer,
     StockMovementSerializer,
 )
 from .services import InventoryService, ProductService
@@ -42,7 +43,7 @@ from .services import InventoryService, ProductService
 # already shows publicly (see apps.reviews.views).
 PRODUCT_LIST_QUERYSET = (
     Product.objects.filter(is_active=True)
-    .select_related("category", "brand")
+    .select_related("category", "brand", "inventory")
     .prefetch_related("images")
     .annotate(
         average_rating=Avg("reviews__rating", filter=Q(reviews__is_approved=True)),
@@ -69,10 +70,27 @@ class CategoryListCreateView(generics.ListCreateAPIView):
         # Top-level only in the list view — children are nested by the
         # serializer. Admins listing for a management UI can still see
         # inactive categories.
+        is_admin = self.request.user.is_authenticated and self.request.user.is_admin
+        children_filter = Q() if is_admin else Q(is_active=True)
+        grandchildren_qs = (
+            Category.objects.filter(children_filter)
+            .annotate(product_count=Count("products", filter=Q(products__is_active=True), distinct=True))
+            .order_by("display_order", "name")
+        )
+        children_qs = (
+            Category.objects.filter(children_filter)
+            .annotate(product_count=Count("products", filter=Q(products__is_active=True), distinct=True))
+            .order_by("display_order", "name")
+            .prefetch_related(Prefetch("children", queryset=grandchildren_qs))
+        )
         qs = Category.objects.filter(parent__isnull=True)
-        if not (self.request.user.is_authenticated and self.request.user.is_admin):
+        if not is_admin:
             qs = qs.filter(is_active=True)
-        return qs
+        return (
+            qs.annotate(product_count=Count("products", filter=Q(products__is_active=True), distinct=True))
+            .order_by("display_order", "name")
+            .prefetch_related(Prefetch("children", queryset=children_qs))
+        )
 
 
 class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -80,8 +98,28 @@ class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     serializer_class = CategorySerializer
     permission_classes = [IsAdminOrReadOnly]
-    queryset = Category.objects.all()
     lookup_field = "slug"
+
+    def get_queryset(self):
+        is_admin = self.request.user.is_authenticated and self.request.user.is_admin
+        children_filter = Q() if is_admin else Q(is_active=True)
+        grandchildren_qs = (
+            Category.objects.filter(children_filter)
+            .annotate(product_count=Count("products", filter=Q(products__is_active=True), distinct=True))
+            .order_by("display_order", "name")
+        )
+        children_qs = (
+            Category.objects.filter(children_filter)
+            .annotate(product_count=Count("products", filter=Q(products__is_active=True), distinct=True))
+            .order_by("display_order", "name")
+            .prefetch_related(Prefetch("children", queryset=grandchildren_qs))
+        )
+        return (
+            Category.objects.all()
+            .annotate(product_count=Count("products", filter=Q(products__is_active=True), distinct=True))
+            .order_by("display_order", "name")
+            .prefetch_related(Prefetch("children", queryset=children_qs))
+        )
 
 
 class BrandListCreateView(generics.ListCreateAPIView):
@@ -135,7 +173,7 @@ class ProductListCreateView(generics.ListCreateAPIView):
         # never be applied.
         qs = PRODUCT_LIST_QUERYSET
         if self.request.user.is_authenticated and self.request.user.is_admin:
-            qs = Product.objects.all().select_related("category", "brand").prefetch_related("images")
+            qs = Product.objects.all().select_related("category", "brand", "inventory").prefetch_related("images")
         return qs
 
     @extend_schema(parameters=[OpenApiParameter(name="search", type=str, description="Free-text search query")])
@@ -322,3 +360,19 @@ class StockMovementListView(generics.ListAPIView):
         if getattr(self, "swagger_fake_view", False):
             return StockMovement.objects.none()
         return StockMovement.objects.filter(product__slug=self.kwargs["slug"])
+
+
+class SiteConfigurationView(APIView):
+    """
+    GET /api/v1/products/site-config/ (public)
+    Returns site-wide media URLs such as homepage hero banner.
+    """
+
+    permission_classes = [permissions.AllowAny]
+
+    @extend_schema(responses={200: SiteConfigurationSerializer})
+    def get(self, request):
+        config = SiteConfiguration.get_solo()
+        serializer = SiteConfigurationSerializer(config, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+

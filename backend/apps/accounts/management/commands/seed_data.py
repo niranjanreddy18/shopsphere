@@ -292,7 +292,7 @@ class Command(BaseCommand):
             for image_index, relative_path in enumerate(product_seed.image_paths):
                 ProductImage.objects.create(
                     product=product,
-                    image=str(IMAGE_ROOT / relative_path),
+                    image=(IMAGE_ROOT / relative_path).as_posix(),
                     alt_text=product_seed.name,
                     is_primary=(image_index == 0),
                     display_order=image_index,

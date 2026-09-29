@@ -19,7 +19,11 @@ class WishlistListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
             return WishlistItem.objects.none()
-        return WishlistItem.objects.filter(user=self.request.user).select_related("product")
+        return (
+            WishlistItem.objects.filter(user=self.request.user)
+            .select_related("product__category", "product__brand", "product__inventory")
+            .prefetch_related("product__images")
+        )
 
     def get_serializer_class(self):
         return AddWishlistItemSerializer if self.request.method == "POST" else WishlistItemSerializer

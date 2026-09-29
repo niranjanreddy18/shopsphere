@@ -11,8 +11,13 @@ import { ProductGridSkeleton } from "../../../components/ui/Skeleton";
 import EmptyState from "../../../components/ui/EmptyState";
 import ProductCard from "./ProductCard";
 
-export default function ProductGrid({ products, status, emptyMessage = "No products found." }) {
-  if (status === "loading") {
+export default function ProductGrid({
+  products,
+  status,
+  emptyMessage = "No products found.",
+  priorityCount = 0,
+}) {
+  if (status === "loading" || status === "idle") {
     return <ProductGridSkeleton />;
   }
 
@@ -28,8 +33,13 @@ export default function ProductGrid({ products, status, emptyMessage = "No produ
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-      {products.map((product) => (
-        <ProductCard key={product.id} product={product} />
+      {products.map((product, index) => (
+        <ProductCard
+          key={product.id}
+          product={product}
+          loading={index < priorityCount ? "eager" : "lazy"}
+          decoding="async"
+        />
       ))}
     </div>
   );

@@ -32,23 +32,43 @@ import AppRoutes from "./routes/AppRoutes";
 function App() {
   const dispatch = useAppDispatch();
   const { isAuthenticated, isInitializing } = useAppSelector((state) => state.auth);
-  const wasAuthenticated = useRef(isAuthenticated);
+  const wasAuthenticated = useRef(false);
+  const hasInitializedAuth = useRef(false);
 
-  // Initial bootstrap: resolve the session, then load the cart (works for
-  // both guest and logged-in visitors).
+  // Initial bootstrap: resolve the session if an access token exists.
   useEffect(() => {
     if (getAccessToken()) {
       dispatch(fetchProfile());
     }
-    dispatch(fetchCart());
   }, [dispatch]);
 
-  // Fires once per logged-out -> logged-in transition (covers both a fresh
-  // login and a page refresh that resolves an existing session), merging
-  // any guest cart and loading the wishlist.
+  // Handles cart and wishlist initialization and session transitions:
+  // - On initial startup: once auth initialization settles (or immediately for guests),
+  //   load the appropriate cart (or merge guest cart) and wishlist exactly once.
+  // - On login transition: merge guest cart or fetch user cart, and load wishlist.
+  // - On logout transition: load a fresh guest cart.
   useEffect(() => {
     if (isInitializing) return;
 
+    if (!hasInitializedAuth.current) {
+      hasInitializedAuth.current = true;
+      wasAuthenticated.current = isAuthenticated;
+
+      if (isAuthenticated) {
+        const guestToken = getCartToken();
+        if (guestToken) {
+          dispatch(mergeGuestCart(guestToken)).then(() => clearCartToken());
+        } else {
+          dispatch(fetchCart());
+        }
+        dispatch(fetchWishlist());
+      } else {
+        dispatch(fetchCart());
+      }
+      return;
+    }
+
+    // Subsequent transitions after initial startup:
     if (isAuthenticated && !wasAuthenticated.current) {
       const guestToken = getCartToken();
       if (guestToken) {
@@ -57,6 +77,8 @@ function App() {
         dispatch(fetchCart());
       }
       dispatch(fetchWishlist());
+    } else if (!isAuthenticated && wasAuthenticated.current) {
+      dispatch(fetchCart());
     }
 
     wasAuthenticated.current = isAuthenticated;

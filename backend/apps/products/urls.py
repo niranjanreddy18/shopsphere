@@ -19,6 +19,9 @@ urlpatterns = [
     path("brands/", views.BrandListCreateView.as_view(), name="brand-list-create"),
     path("brands/<slug:slug>/", views.BrandDetailView.as_view(), name="brand-detail"),
 
+    # --- Site Configuration & Global Media -----------------------------------
+    path("site-config/", views.SiteConfigurationView.as_view(), name="site-config"),
+
     # --- Product images (admin management) -----------------------------------
     path("images/<uuid:pk>/set-primary/", views.SetPrimaryImageView.as_view(), name="image-set-primary"),
     path("images/<uuid:pk>/", views.ProductImageDetailView.as_view(), name="image-detail"),

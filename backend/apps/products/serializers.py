@@ -10,7 +10,7 @@ avoiding over-fetching on the page that matters most for performance.
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from .models import Brand, Category, Inventory, Product, ProductImage, StockMovement
+from .models import Brand, Category, Inventory, Product, ProductImage, SiteConfiguration, StockMovement
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -32,7 +32,20 @@ class CategorySerializer(serializers.ModelSerializer):
     def get_children(self, obj):
         # Only recurse one level — deep trees should be fetched per-branch
         # rather than serialising the entire tree on every request.
-        return CategorySerializer(obj.children.filter(is_active=True), many=True, context=self.context).data
+        if hasattr(obj, "_prefetched_objects_cache") and "children" in obj._prefetched_objects_cache:
+            children = obj.children.all()
+            request = self.context.get("request")
+            is_admin = (
+                request
+                and request.user
+                and request.user.is_authenticated
+                and getattr(request.user, "is_admin", False)
+            )
+            if not is_admin:
+                children = [c for c in children if c.is_active]
+        else:
+            children = obj.children.filter(is_active=True)
+        return CategorySerializer(children, many=True, context=self.context).data
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -44,6 +57,8 @@ class CategorySerializer(serializers.ModelSerializer):
 
     @extend_schema_field(serializers.IntegerField())
     def get_product_count(self, obj):
+        if hasattr(obj, "product_count"):
+            return obj.product_count
         return obj.products.filter(is_active=True).count()
 
 
@@ -204,3 +219,20 @@ class ProductWriteSerializer(serializers.ModelSerializer):
         if discount_price is not None and price is not None and discount_price >= price:
             raise serializers.ValidationError({"discount_price": "Must be lower than the regular price."})
         return attrs
+
+
+class SiteConfigurationSerializer(serializers.ModelSerializer):
+    banner = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SiteConfiguration
+        fields = ["banner"]
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_banner(self, obj):
+        if not obj.banner:
+            return None
+        request = self.context.get("request")
+        url = obj.banner.url
+        return request.build_absolute_uri(url) if request and url.startswith("/") else url
+

@@ -8,19 +8,46 @@
  * doesn't change photo on every page load.
  */
 
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
+import { productsApi } from "../../../api/productsApi";
 
 export default function Hero() {
+  const [bannerUrl, setBannerUrl] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    productsApi
+      .siteConfig()
+      .then((data) => {
+        if (isMounted && data?.banner) {
+          setBannerUrl(data.banner);
+        }
+      })
+      .catch(() => {
+        // Graceful handling — gradient background covers the section
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
-    <section className="relative overflow-hidden rounded-3xl">
+    <section className="relative overflow-hidden rounded-3xl bg-ink-900">
       <div className="relative h-72 md:h-[28rem] lg:h-[36rem]">
-        <img
-          src="/images/banner.png"
-          alt="Promotional banner"
-          className="absolute inset-0 h-full w-full object-cover"
-          loading="eager"
-        />
+        {bannerUrl && (
+          <img
+            src={bannerUrl}
+            alt="Promotional banner"
+            className="absolute inset-0 h-full w-full object-cover"
+            loading="eager"
+            fetchPriority="high"
+            decoding="sync"
+            width="1535"
+            height="1024"
+          />
+        )}
 
         <div className="absolute inset-0 bg-black/35" />
 

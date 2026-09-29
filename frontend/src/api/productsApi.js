@@ -25,4 +25,6 @@ export const productsApi = {
   categories: () => axiosClient.get("/products/categories/").then((res) => res.data),
 
   brands: () => axiosClient.get("/products/brands/").then((res) => res.data),
+
+  siteConfig: () => axiosClient.get("/products/site-config/").then((res) => res.data),
 };

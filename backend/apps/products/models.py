@@ -301,3 +301,25 @@ class StockMovement(BaseModel):
 
     def __str__(self) -> str:
         return f"{self.product.sku}: {self.quantity_change:+d} ({self.movement_type})"
+
+
+class SiteConfiguration(BaseModel):
+    """
+    Singleton-style site configuration for storefront banners and global media.
+    """
+
+    banner = models.ImageField(upload_to="site/banner/", blank=True, null=True)
+
+    class Meta:
+        db_table = "products_site_configuration"
+        verbose_name = "Site Configuration"
+        verbose_name_plural = "Site Configuration"
+
+    def __str__(self) -> str:
+        return "Site Configuration"
+
+    @classmethod
+    def get_solo(cls) -> "SiteConfiguration":
+        config, _ = cls.objects.get_or_create(id="00000000-0000-0000-0000-000000000001")
+        return config
+

@@ -65,12 +65,20 @@ class CartSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(CartItemSerializer(many=True))
     def get_items(self, obj):
-        active = obj.items.filter(is_saved_for_later=False).select_related("product")
+        active = (
+            obj.items.filter(is_saved_for_later=False)
+            .select_related("product__category", "product__brand", "product__inventory")
+            .prefetch_related("product__images")
+        )
         return CartItemSerializer(active, many=True, context=self.context).data
 
     @extend_schema_field(CartItemSerializer(many=True))
     def get_saved_for_later(self, obj):
-        saved = obj.items.filter(is_saved_for_later=True).select_related("product")
+        saved = (
+            obj.items.filter(is_saved_for_later=True)
+            .select_related("product__category", "product__brand", "product__inventory")
+            .prefetch_related("product__images")
+        )
         return CartItemSerializer(saved, many=True, context=self.context).data
 
     @extend_schema_field(CartSummarySerializer)

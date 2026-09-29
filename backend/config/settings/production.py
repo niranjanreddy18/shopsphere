@@ -17,6 +17,11 @@ DEBUG = False
 
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv())
 
+# Render / reverse-proxy SSL header configuration
+# Render terminates SSL at its load balancer and forwards HTTP with X-Forwarded-Proto: https
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
+
 # --- HTTPS / transport security -----------------------------------------
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
@@ -27,6 +32,13 @@ SECURE_HSTS_PRELOAD = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_BROWSER_XSS_FILTER = True
 X_FRAME_OPTIONS = "DENY"
+
+# CSRF trusted origins for Render and custom domains
+CSRF_TRUSTED_ORIGINS = config(
+    "CSRF_TRUSTED_ORIGINS",
+    default="https://*.onrender.com",
+    cast=Csv(),
+)
 
 # CORS must be an explicit allow-list in production — no wildcards.
 CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", cast=Csv())
@@ -45,6 +57,35 @@ MIDDLEWARE = [
     *MIDDLEWARE[1:],  # everything else from base.py, unchanged
 ]
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+INSTALLED_APPS = [
+    *INSTALLED_APPS,
+    "cloudinary",
+    "cloudinary_storage",
+]
+
+# ------------------------------------------------------------------------------
+# Media storage (Cloudinary in Production)
+# ------------------------------------------------------------------------------
+CLOUDINARY_CLOUD_NAME = config("CLOUDINARY_CLOUD_NAME", default="")
+CLOUDINARY_API_KEY = config("CLOUDINARY_API_KEY", default="")
+CLOUDINARY_API_SECRET = config("CLOUDINARY_API_SECRET", default="")
+
+if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
+    CLOUDINARY_STORAGE = {
+        "CLOUD_NAME": CLOUDINARY_CLOUD_NAME,
+        "API_KEY": CLOUDINARY_API_KEY,
+        "API_SECRET": CLOUDINARY_API_SECRET,
+        "SECURE": True,
+        "PREFIX": "media",
+    }
+    DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+
+# ------------------------------------------------------------------------------
+# Database connection settings (persistent connections with health check)
+# ------------------------------------------------------------------------------
+if "default" in DATABASES:
+    DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
 
 # ------------------------------------------------------------------------------
 # Logging

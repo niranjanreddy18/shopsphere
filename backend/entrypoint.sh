@@ -20,6 +20,10 @@ python manage.py migrate --noinput
 #echo "passing data to database"
 python manage.py seed_data
 
+if [ "$MIGRATE_MEDIA_TO_CLOUDINARY" = "true" ]; then
+    echo "Running media migration to Cloudinary..."
+    python manage.py migrate_media_to_cloudinary --overwrite
+fi
 echo "Collecting static files..."
 python manage.py collectstatic --noinput --clear
 

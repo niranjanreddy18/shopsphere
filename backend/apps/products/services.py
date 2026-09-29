@@ -165,14 +165,19 @@ class ProductService:
             review_count=Count("reviews", filter=Q(reviews__is_approved=True)),
         )
 
-        curated = product.related_products.filter(is_active=True).annotate(**rating_annotations)[:limit]
+        curated = (
+            product.related_products.filter(is_active=True)
+            .select_related("category", "brand", "inventory")
+            .prefetch_related("images")
+            .annotate(**rating_annotations)[:limit]
+        )
         if curated:
             return curated
 
         return (
             Product.objects.filter(category=product.category, is_active=True)
             .exclude(pk=product.pk)
-            .select_related("category", "brand")
+            .select_related("category", "brand", "inventory")
             .prefetch_related("images")
             .annotate(**rating_annotations)[:limit]
         )
