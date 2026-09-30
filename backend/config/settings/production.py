@@ -79,7 +79,7 @@ if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
         "SECURE": True,
         "PREFIX": "media",
     }
-    DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+    DEFAULT_FILE_STORAGE = "core.storage.SafeMediaCloudinaryStorage"
 
 # ------------------------------------------------------------------------------
 # Database connection settings (persistent connections with health check)
