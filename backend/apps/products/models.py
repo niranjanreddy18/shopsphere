@@ -16,6 +16,7 @@ import uuid
 
 from decimal import Decimal
 
+from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.text import slugify
@@ -179,6 +180,36 @@ class Product(BaseModel):
             return self.inventory.is_low_stock
         except Inventory.DoesNotExist:
             return False
+
+
+class RecentlyViewedProduct(BaseModel):
+    """A product viewed by an authenticated user, ordered by its latest view."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="recently_viewed_products",
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="recently_viewed_by",
+    )
+    viewed_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "products_recently_viewed_product"
+        ordering = ["-viewed_at", "-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "product"],
+                name="unique_recent_view_user_product",
+            ),
+        ]
+        indexes = [models.Index(fields=["user", "-viewed_at"], name="recent_user_viewed_idx")]
+
+    def __str__(self) -> str:
+        return f"{self.user_id} viewed {self.product_id} at {self.viewed_at}"
 
 
 class ProductImage(BaseModel):

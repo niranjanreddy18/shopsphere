@@ -14,6 +14,11 @@ export const productsApi = {
 
   detail: (slug) => axiosClient.get(`/products/${slug}/`).then((res) => res.data),
 
+  recordRecentlyViewed: (productId) =>
+    axiosClient.post("/products/recently-viewed/", { product_id: productId }).then((res) => res.data),
+
+  recentlyViewed: () => axiosClient.get("/products/recently-viewed/").then((res) => res.data),
+
   related: (slug) => axiosClient.get(`/products/${slug}/related/`).then((res) => res.data),
 
   featured: (params) => axiosClient.get("/products/featured/", { params }).then((res) => res.data),

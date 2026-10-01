@@ -5,6 +5,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import Button from "../../../components/ui/Button";
 import { Spinner } from "../../../components/ui/Spinner";
@@ -33,6 +34,8 @@ const EMPTY_ADDRESS = {
 
 export default function AddressesPage() {
   const dispatch = useAppDispatch();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { items, status } = useAppSelector((state) => state.address);
   const [formMode, setFormMode] = useState(null); // null | 'create' | address object being edited
 
@@ -48,6 +51,9 @@ export default function AddressesPage() {
 
     if (createAddress.fulfilled.match(result) || updateAddress.fulfilled.match(result)) {
       setFormMode(null);
+      if (createAddress.fulfilled.match(result) && location.state?.returnTo === "/checkout") {
+        navigate("/checkout", { replace: true });
+      }
     }
   };
 

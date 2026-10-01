@@ -221,6 +221,20 @@ class ProductWriteSerializer(serializers.ModelSerializer):
         return attrs
 
 
+class RecordRecentlyViewedSerializer(serializers.Serializer):
+    product_id = serializers.PrimaryKeyRelatedField(
+        source="product", queryset=Product.objects.filter(is_active=True)
+    )
+
+    def validate(self, attrs):
+        unexpected_fields = set(self.initial_data) - {"product_id"}
+        if unexpected_fields:
+            raise serializers.ValidationError(
+                {field: "This field is not allowed." for field in unexpected_fields}
+            )
+        return attrs
+
+
 class SiteConfigurationSerializer(serializers.ModelSerializer):
     banner = serializers.SerializerMethodField()
 

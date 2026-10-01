@@ -7,13 +7,17 @@
 
 import { Link } from "react-router-dom";
 
-export default function AddressSelector({ title, addresses, selectedId, onSelect }) {
+export default function AddressSelector({ title, addresses, selectedId, onSelect, returnTo }) {
   if (addresses.length === 0) {
     return (
       <div className="card">
         <h2 className="mb-2 font-semibold text-gray-900">{title}</h2>
         <p className="mb-3 text-sm text-gray-600">You don't have any saved addresses yet.</p>
-        <Link to="/profile/addresses" className="btn-primary inline-block text-sm">
+        <Link
+          to="/profile/addresses"
+          state={returnTo ? { returnTo } : undefined}
+          className="btn-primary inline-block text-sm"
+        >
           Add an address
         </Link>
       </div>

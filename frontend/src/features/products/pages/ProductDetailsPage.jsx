@@ -7,9 +7,8 @@
  * change; the backend increments the product's view_count as a side effect
  * of the detail GET (see ProductService.increment_view_count on the
  * backend) so no separate "track a view" call is needed here — this page
- * separately records the view into the shopper's own browser-local
- * "recently viewed" history (see utils/recentlyViewed.js), which is an
- * unrelated, client-only concern from the backend's aggregate counter.
+ * separately records the view in the authenticated shopper's server-side
+ * recently viewed history, independent of the backend's aggregate counter.
  */
 
 import { useEffect, useState } from "react";
@@ -17,11 +16,11 @@ import { useParams } from "react-router-dom";
 import { Heart } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "../../../app/store/hooks";
+import { productsApi } from "../../../api/productsApi";
 import { useAuth } from "../../../hooks/useAuth";
 import { clearCurrentProduct, fetchProductDetail, fetchRelatedProducts } from "../productSlice";
 import { addToCart } from "../../cart/cartSlice";
 import { addToWishlist, removeFromWishlist } from "../../wishlist/wishlistSlice";
-import { recordProductView } from "../../../utils/recentlyViewed";
 import ProductImageGallery from "../components/ProductImageGallery";
 import ProductCollectionSection from "../components/ProductCollectionSection";
 import ProductReviewsSection from "../components/ProductReviewsSection";
@@ -47,6 +46,7 @@ export default function ProductDetailsPage() {
   const wishlistItems = useAppSelector((s) => s.wishlist.items);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("description");
+  const [recentlyViewedRefreshKey, setRecentlyViewedRefreshKey] = useState(0);
 
   useEffect(() => {
     dispatch(fetchProductDetail(slug));
@@ -55,8 +55,11 @@ export default function ProductDetailsPage() {
   }, [dispatch, slug]);
 
   useEffect(() => {
-    if (product) recordProductView(product);
-  }, [product]);
+    if (!product || !isAuthenticated) return;
+    productsApi.recordRecentlyViewed(product.id)
+      .then(() => setRecentlyViewedRefreshKey((key) => key + 1))
+      .catch(() => {});
+  }, [product, isAuthenticated]);
 
   if (status === "loading" || status === "idle") return <ProductDetailSkeleton />;
   if (status === "failed" || !product) {
@@ -190,7 +193,11 @@ export default function ProductDetailsPage() {
         />
       )}
 
-      <RecentlyViewedSection excludeProductId={product.id} />
+      <RecentlyViewedSection
+        excludeProductId={product.id}
+        authenticated={isAuthenticated}
+        refreshKey={recentlyViewedRefreshKey}
+      />
     </div>
   );
 }

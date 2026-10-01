@@ -26,6 +26,7 @@ from .serializers import (
     ProductImageSerializer,
     ProductListSerializer,
     ProductWriteSerializer,
+    RecordRecentlyViewedSerializer,
     SiteConfigurationSerializer,
     StockMovementSerializer,
 )
@@ -217,6 +218,51 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
         ProductService.increment_view_count(product=instance)
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
+
+
+class RecentlyViewedListCreateView(generics.ListCreateAPIView):
+    """List or record the authenticated caller's recently viewed products."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return PRODUCT_LIST_QUERYSET.none()
+        return (
+            PRODUCT_LIST_QUERYSET.filter(recently_viewed_by__user=self.request.user)
+            .order_by(
+                "-recently_viewed_by__viewed_at",
+                "-recently_viewed_by__created_at",
+                "-pk",
+            )
+            [:10]
+        )
+
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return RecordRecentlyViewedSerializer
+        return ProductListSerializer
+
+    def list(self, request, *args, **kwargs):
+        if "user_id" in request.query_params:
+            return Response(
+                {"user_id": ["This parameter is not allowed."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return super().list(request, *args, **kwargs)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        item = ProductService.record_recently_viewed(
+            user=request.user,
+            product=serializer.validated_data["product"],
+        )
+        product_serializer = ProductListSerializer(
+            item.product,
+            context=self.get_serializer_context(),
+        )
+        return Response(product_serializer.data, status=status.HTTP_200_OK)
 
 
 class RelatedProductsView(APIView):

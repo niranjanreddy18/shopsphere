@@ -27,6 +27,7 @@ urlpatterns = [
     path("images/<uuid:pk>/", views.ProductImageDetailView.as_view(), name="image-detail"),
 
     # --- Core product catalog -------------------------------------------------
+    path("recently-viewed/", views.RecentlyViewedListCreateView.as_view(), name="recently-viewed"),
     path("", views.ProductListCreateView.as_view(), name="product-list-create"),
     path("<slug:slug>/", views.ProductDetailView.as_view(), name="product-detail"),
     path("<slug:slug>/related/", views.RelatedProductsView.as_view(), name="product-related"),

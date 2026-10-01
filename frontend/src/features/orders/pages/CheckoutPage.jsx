@@ -72,7 +72,13 @@ export default function CheckoutPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <AddressSelector title="Shipping Address" addresses={addresses} selectedId={shippingId} onSelect={setShippingId} />
+          <AddressSelector
+            title="Shipping Address"
+            addresses={addresses}
+            selectedId={shippingId}
+            onSelect={setShippingId}
+            returnTo="/checkout"
+          />
 
           <div className="card">
             <label className="flex items-center gap-2 text-sm text-gray-700">
@@ -87,7 +93,13 @@ export default function CheckoutPage() {
           </div>
 
           {!sameAsShipping && (
-            <AddressSelector title="Billing Address" addresses={addresses} selectedId={billingId} onSelect={setBillingId} />
+            <AddressSelector
+              title="Billing Address"
+              addresses={addresses}
+              selectedId={billingId}
+              onSelect={setBillingId}
+              returnTo="/checkout"
+            />
           )}
 
           <div className="card">

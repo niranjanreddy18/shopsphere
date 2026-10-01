@@ -1,23 +1,46 @@
 /**
- * RecentlyViewedSection — shows the shopper's own browsing history (see
- * utils/recentlyViewed.js), excluding the product currently being viewed.
+ * RecentlyViewedSection — shows the authenticated shopper's server-side
+ * browsing history, excluding the product currently being viewed.
  * Renders nothing until there's at least one other product to show.
  */
 
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { getRecentlyViewed } from "../../../utils/recentlyViewed";
+import { productsApi } from "../../../api/productsApi";
 
-export default function RecentlyViewedSection({ excludeProductId }) {
-  const items = getRecentlyViewed().filter((p) => p.id !== excludeProductId);
+export default function RecentlyViewedSection({ excludeProductId, authenticated, refreshKey }) {
+  const [items, setItems] = useState([]);
 
-  if (items.length === 0) return null;
+  useEffect(() => {
+    if (!authenticated || refreshKey === 0) {
+      setItems([]);
+      return;
+    }
+
+    let ignore = false;
+    productsApi.recentlyViewed()
+      .then((response) => {
+        if (!ignore) setItems(response.results ?? response);
+      })
+      .catch(() => {
+        if (!ignore) setItems([]);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [authenticated, refreshKey]);
+
+  const visibleItems = items.filter((product) => product.id !== excludeProductId);
+
+  if (visibleItems.length === 0) return null;
 
   return (
     <section className="mt-12">
       <h2 className="section-heading mb-5 !text-xl">Recently Viewed</h2>
       <div className="flex gap-4 overflow-x-auto pb-2">
-        {items.map((product) => (
+        {visibleItems.map((product) => (
           <Link
             key={product.id}
             to={`/products/${product.slug}`}

@@ -1,10 +1,12 @@
 """Tests for the products app: models, services, and API endpoints."""
 
 from decimal import Decimal
+from datetime import timedelta
 
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import RequestFactory, TestCase
+from django.utils import timezone
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -12,7 +14,7 @@ from rest_framework.test import APITestCase
 from apps.accounts.models import User
 from core.exceptions import ApplicationError
 
-from .models import Brand, Category, Inventory, Product, ProductImage, StockMovement
+from .models import Brand, Category, Inventory, Product, ProductImage, RecentlyViewedProduct, StockMovement
 from .serializers import CategorySerializer
 from .services import InventoryService, ProductService
 
@@ -194,9 +196,116 @@ class ProductAPITests(APITestCase):
         self.customer = User.objects.create_user(
             email="cust@example.com", password="StrongPass1!", first_name="C", last_name="D"
         )
+        self.other_customer = User.objects.create_user(
+            email="other@example.com", password="StrongPass1!", first_name="E", last_name="F"
+        )
         self.product = _make_product(
             self.category, name="Gaming Laptop", brand=self.brand, price=Decimal("1500.00"), stock=5
         )
+
+    def test_recently_viewed_requires_authentication_for_get_and_post(self):
+        url = reverse("products:recently-viewed")
+
+        self.assertEqual(self.client.get(url).status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(
+            self.client.post(url, {"product_id": str(self.product.id)}).status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
+
+    def test_authenticated_user_can_record_and_retrieve_recently_viewed_product(self):
+        self.client.force_authenticate(user=self.customer)
+        url = reverse("products:recently-viewed")
+
+        post_response = self.client.post(url, {"product_id": str(self.product.id)})
+        get_response = self.client.get(url)
+
+        self.assertEqual(post_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(get_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(get_response.data["results"][0]["id"], str(self.product.id))
+        self.assertTrue(
+            RecentlyViewedProduct.objects.filter(user=self.customer, product=self.product).exists()
+        )
+
+    def test_recently_viewed_products_are_isolated_by_user_and_user_id_is_rejected(self):
+        other_product = _make_product(self.category, name="Other Product")
+        url = reverse("products:recently-viewed")
+
+        self.client.force_authenticate(user=self.customer)
+        self.client.post(url, {"product_id": str(self.product.id)})
+        self.client.force_authenticate(user=self.other_customer)
+        self.client.post(url, {"product_id": str(other_product.id)})
+
+        response = self.client.get(url)
+        self.assertEqual([item["id"] for item in response.data["results"]], [str(other_product.id)])
+
+        response = self.client.get(url, {"user_id": str(self.customer.id)})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data, {"user_id": ["This parameter is not allowed."]})
+
+    def test_recently_viewed_post_rejects_client_supplied_user_id(self):
+        self.client.force_authenticate(user=self.customer)
+        response = self.client.post(
+            reverse("products:recently-viewed"),
+            {"product_id": str(self.product.id), "user_id": str(self.other_customer.id)},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(RecentlyViewedProduct.objects.exists())
+
+    def test_viewing_same_product_twice_moves_it_to_newest_without_duplicate(self):
+        older_product = _make_product(self.category, name="Older Product")
+        url = reverse("products:recently-viewed")
+        self.client.force_authenticate(user=self.customer)
+
+        self.client.post(url, {"product_id": str(self.product.id)})
+        self.client.post(url, {"product_id": str(older_product.id)})
+        self.client.post(url, {"product_id": str(self.product.id)})
+
+        response = self.client.get(url)
+        self.assertEqual(
+            [item["id"] for item in response.data["results"]],
+            [str(self.product.id), str(older_product.id)],
+        )
+        self.assertEqual(
+            RecentlyViewedProduct.objects.filter(user=self.customer, product=self.product).count(), 1
+        )
+
+    def test_recently_viewed_retains_only_ten_and_removes_oldest_on_eleventh(self):
+        products = [
+            _make_product(self.category, name=f"Recent Product {index}")
+            for index in range(11)
+        ]
+        url = reverse("products:recently-viewed")
+        self.client.force_authenticate(user=self.customer)
+
+        for product in products:
+            self.client.post(url, {"product_id": str(product.id)})
+
+        response = self.client.get(url)
+        result_ids = [item["id"] for item in response.data["results"]]
+        self.assertEqual(len(result_ids), 10)
+        self.assertEqual(result_ids, [str(product.id) for product in reversed(products[1:])])
+        self.assertFalse(
+            RecentlyViewedProduct.objects.filter(user=self.customer, product=products[0]).exists()
+        )
+
+    def test_recently_viewed_get_limits_results_to_ten(self):
+        products = [
+            _make_product(self.category, name=f"Seeded Product {index}")
+            for index in range(11)
+        ]
+        for index, product in enumerate(products):
+            RecentlyViewedProduct.objects.create(
+                user=self.customer,
+                product=product,
+                viewed_at=timezone.now() + timedelta(seconds=index),
+            )
+        self.client.force_authenticate(user=self.customer)
+
+        response = self.client.get(reverse("products:recently-viewed"))
+
+        self.assertEqual(len(response.data["results"]), 10)
+        self.assertEqual(response.data["results"][0]["id"], str(products[-1].id))
 
     def test_list_products_public(self):
         response = self.client.get(reverse("products:product-list-create"))

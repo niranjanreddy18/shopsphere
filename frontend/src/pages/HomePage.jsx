@@ -14,7 +14,6 @@ import { fetchBestSellers, fetchFeaturedProducts, fetchNewArrivals } from "../fe
 import Hero from "../features/products/components/Hero";
 import CategoryGrid from "../features/products/components/CategoryGrid";
 import BrandStrip from "../features/products/components/BrandStrip";
-import NewsletterSection from "../features/products/components/NewsletterSection";
 import ProductCollectionSection from "../features/products/components/ProductCollectionSection";
 
 export default function HomePage() {
@@ -129,8 +128,6 @@ export default function HomePage() {
       </section>
 
       {/* Testimonials removed from landing page per request */}
-
-      <NewsletterSection />
     </div>
   );
 }

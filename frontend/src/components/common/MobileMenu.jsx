@@ -9,11 +9,11 @@
 import { Link } from "react-router-dom";
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { LayoutDashboard, LogOut, User, X } from "lucide-react";
+import { LogOut, User, X } from "lucide-react";
 
 import { ROUTES } from "../../constants/routes";
 
-export default function MobileMenu({ isOpen, onClose, isAuthenticated, isAdmin, onLogout }) {
+export default function MobileMenu({ isOpen, onClose, isAuthenticated, onLogout }) {
   useEffect(() => {
     if (!isOpen) return;
     const prev = document.body.style.overflow;
@@ -44,11 +44,6 @@ export default function MobileMenu({ isOpen, onClose, isAuthenticated, isAdmin, 
           <Link to="/search" onClick={onClose} className={linkClass}>Search</Link>
           {isAuthenticated && <Link to="/orders" onClick={onClose} className={linkClass}>Orders</Link>}
           {isAuthenticated && <Link to="/wishlist" onClick={onClose} className={linkClass}>Wishlist</Link>}
-          {isAdmin && (
-            <Link to="/admin" onClick={onClose} className={linkClass}>
-              <LayoutDashboard className="h-4 w-4" /> Admin Dashboard
-            </Link>
-          )}
 
           <div className="my-2 border-t border-ink-100" />
 

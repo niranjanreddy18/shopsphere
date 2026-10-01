@@ -13,7 +13,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Bell, Heart, LayoutDashboard, LogOut, Menu, Package, ShoppingCart, User } from "lucide-react";
+import { Bell, Heart, LogOut, Menu, Package, ShoppingCart, User } from "lucide-react";
 
 import { useAuth } from "../../hooks/useAuth";
 import { useAppDispatch, useAppSelector } from "../../app/store/hooks";
@@ -136,7 +136,7 @@ function ProfileMenu({ user, onLogout }) {
 }
 
 export default function Header() {
-  const { user, isAuthenticated, isAdmin } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -171,11 +171,6 @@ export default function Header() {
           <CategoriesDropdown />
           <Link to="/products" className="text-sm font-medium text-ink-700 hover:text-brand-700">Products</Link>
           {isAuthenticated && <Link to="/orders" className="text-sm font-medium text-ink-700 hover:text-brand-700">Orders</Link>}
-          {isAdmin && (
-            <Link to="/admin" className="flex items-center gap-1 text-sm font-medium text-ink-700 hover:text-brand-700">
-              <LayoutDashboard className="h-4 w-4" /> Admin
-            </Link>
-          )}
         </div>
 
         <div className="flex items-center gap-2 lg:gap-3">
@@ -221,7 +216,6 @@ export default function Header() {
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
         isAuthenticated={isAuthenticated}
-        isAdmin={isAdmin}
         onLogout={handleLogout}
       />
     </header>

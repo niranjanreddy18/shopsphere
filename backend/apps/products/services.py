@@ -7,13 +7,15 @@ consistently here.
 """
 
 import logging
+from datetime import timedelta
 
 from django.db import transaction
-from django.db.models import F, Q
+from django.db.models import F, Max, Q
+from django.utils import timezone
 
 from core.exceptions import ApplicationError
 
-from .models import Inventory, Product, ProductImage, StockMovement
+from .models import Inventory, Product, ProductImage, RecentlyViewedProduct, StockMovement
 
 logger = logging.getLogger("apps")
 
@@ -106,6 +108,38 @@ class InventoryService:
 
 class ProductService:
     """Business logic for product CRUD, related products, and popularity counters."""
+
+    RECENTLY_VIEWED_LIMIT = 10
+
+    @staticmethod
+    @transaction.atomic
+    def record_recently_viewed(*, user, product: Product) -> RecentlyViewedProduct:
+        """Upsert a user's view and retain only their ten most recent products."""
+        type(user).objects.select_for_update().get(pk=user.pk)
+
+        latest_viewed_at = RecentlyViewedProduct.objects.filter(user=user).aggregate(
+            latest_viewed_at=Max("viewed_at")
+        )["latest_viewed_at"]
+        viewed_at = timezone.now()
+        if latest_viewed_at and viewed_at <= latest_viewed_at:
+            viewed_at = latest_viewed_at + timedelta(microseconds=1)
+
+        item, _ = RecentlyViewedProduct.objects.get_or_create(user=user, product=product)
+        RecentlyViewedProduct.objects.filter(pk=item.pk).update(
+            viewed_at=viewed_at,
+            updated_at=viewed_at,
+        )
+        item.viewed_at = viewed_at
+
+        stale_ids = list(
+            RecentlyViewedProduct.objects.filter(user=user)
+            .order_by("-viewed_at", "-created_at", "-pk")
+            .values_list("pk", flat=True)[ProductService.RECENTLY_VIEWED_LIMIT :]
+        )
+        if stale_ids:
+            RecentlyViewedProduct.objects.filter(pk__in=stale_ids).delete()
+
+        return item
 
     @staticmethod
     @transaction.atomic
