@@ -8,14 +8,12 @@ The project is structured as a portfolio-ready web application that demonstrates
 
 ## Features
 
-- User registration, login, password reset, and email verification
+- User registration, login
 - Product catalog with search, filtering, categories, and product detail pages
 - Guest cart and authenticated cart experience
 - Wishlist management
 - Checkout flow with order creation and summary review
 - Stripe-based payment initiation and order payment handling
-- Order history, order detail, and order success flow
-- Admin dashboard for analytics, products, categories, brands, orders, coupons, reviews, and customers
 - API documentation with Swagger and Redoc
 
 ## Tech Stack
