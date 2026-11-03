@@ -30,7 +30,7 @@ ShopSphere is a full-stack e-commerce application built with **Django REST Frame
 | **Backend** | Python 3.12, Django 4.2, Django REST Framework, SimpleJWT (with token rotation & blacklist), `django-filter`, `drf-spectacular` (OpenAPI 3 / Swagger / Redoc), ReportLab, Stripe SDK |
 | **Database** | PostgreSQL (production / Docker) & SQLite (zero-config local development) |
 | **Frontend** | React 19, Vite, Redux Toolkit, React Router v7, Tailwind CSS, Axios, Stripe Elements, Recharts, Lucide Icons |
-| **Testing** | Django `APITestCase` / `TestCase` (212 backend tests including `assertNumQueries` N+1 checks), Vitest + React Testing Library (99 frontend tests) |
+| **Testing** | Django `APITestCase` / `TestCase` (215 backend tests including `assertNumQueries` N+1 checks), Vitest + React Testing Library (99 frontend tests) |
 
 ---
 
@@ -155,10 +155,37 @@ npm run dev
 
 ---
 
+## Render Deployment & Cold-Start Mitigation
+
+When deployed on free or hobby tiers on Render, the backend web service spins down after a period of inactivity. When a new request arrives, Render spins up the container, causing a cold-start delay (typically 30–60 seconds) on the initial request.
+
+To minimize idle cold starts, ShopSphere provides a dedicated, lightweight, unauthenticated health endpoint (`GET /api/health/` and `GET /api/v1/health/`). An external uptime monitor or cron service can ping this endpoint periodically to keep the instance warm:
+
+```text
+External uptime/cron service
+        |
+        | GET /api/health/
+        v
+Render Django backend
+        |
+        v
+Fast HTTP 200 response
+```
+
+### Recommended Configuration
+- **Endpoint**: `https://<your-render-service>.onrender.com/api/health/`
+- **Method**: `GET`
+- **Interval**: Approximately every 10 minutes (Render's idle timeout is typically 15 minutes).
+- **Service options**: Free or low-cost monitoring services like [UptimeRobot](https://uptimerobot.com), [Cron-Job.org](https://cron-job.org), or [Better Stack](https://betterstack.com).
+
+> **Note**: This periodic ping is a lightweight workaround to reduce idle spin-down latency without adding Celery, Redis workers, background threads, or internal cron containers. It does **not** guarantee zero cold starts if Render enforces hard monthly free-tier hour limits, restarts containers during deployments, or terminates instances under platform hosting policies.
+
+---
+
 ## Running Tests
 
 ```bash
-# Backend test suite (212 tests)
+# Backend test suite (215 tests)
 cd backend
 python manage.py test --settings=config.settings.testing
 

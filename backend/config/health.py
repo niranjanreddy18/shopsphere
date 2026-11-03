@@ -9,8 +9,20 @@ import logging
 from django.db import connection
 from django.core.cache import cache
 from django.http import JsonResponse
+from django.views.decorators.http import require_GET
 
 logger = logging.getLogger("apps")
+
+
+@require_GET
+def api_health_check(request):
+    """
+    Lightweight keep-alive health check for Render and external uptime monitors.
+
+    Requires no authentication, executes no database queries or external API calls,
+    and returns HTTP 200 with minimal JSON to keep the server instance awake.
+    """
+    return JsonResponse({"status": "ok"}, status=200)
 
 
 def health_check(request):

@@ -16,10 +16,10 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
 )
 
-from .health import health_check
+from .health import api_health_check, health_check
 
 api_v1_patterns = [
-    path("health/", health_check, name="api-health"),
+    path("health/", api_health_check, name="api-v1-health"),
     path("accounts/", include("apps.accounts.urls")),
     path("products/", include("apps.products.urls")),
     path("cart/", include("apps.cart.urls")),
@@ -34,6 +34,7 @@ api_v1_patterns = [
 
 urlpatterns = [
     path("health/", health_check, name="health"),
+    path("api/health/", api_health_check, name="api-health"),
     path("admin/", admin.site.urls),
     path("api/v1/", include(api_v1_patterns)),
     # --- API documentation (Swagger / Redoc) ---------------------------

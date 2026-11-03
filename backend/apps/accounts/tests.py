@@ -354,6 +354,25 @@ class AdminCustomerManagementAPITests(APITestCase):
         self.assertEqual(response.json()["status"], "healthy")
         self.assertEqual(response.json()["services"]["database"], "healthy")
 
+    def test_api_health_endpoint_returns_ok_unauthenticated(self):
+        """Verify lightweight health check is public, unauthenticated, and returns 200 with tiny JSON."""
+        response = self.client.get("/api/health/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("application/json", response.headers.get("Content-Type", ""))
+        self.assertEqual(response.json(), {"status": "ok"})
+
+    def test_api_v1_health_endpoint_returns_ok_unauthenticated(self):
+        """Verify versioned API health check is also reachable without auth and returns 200 OK."""
+        response = self.client.get("/api/v1/health/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("application/json", response.headers.get("Content-Type", ""))
+        self.assertEqual(response.json(), {"status": "ok"})
+
+    def test_api_health_endpoint_rejects_post(self):
+        """Verify health check restricts method to GET (rejects POST)."""
+        response = self.client.post("/api/health/", {})
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
     def test_subsequent_password_reset_invalidates_prior_tokens(self):
         AuthService.request_password_reset(email=self.customer.email)
         first_token = PasswordResetToken.objects.filter(user=self.customer).first()
