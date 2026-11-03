@@ -15,6 +15,7 @@ import toast from "react-hot-toast";
 
 import { ordersApi } from "../../api/ordersApi";
 import { extractErrorMessage } from "../../utils/apiErrors";
+import { logoutUser } from "../auth/authSlice";
 
 const initialState = {
   history: { results: [], count: 0, totalPages: 0, status: "idle" },
@@ -111,7 +112,8 @@ const orderSlice = createSlice({
       })
       .addCase(cancelOrder.fulfilled, (state, action) => {
         state.currentOrder = action.payload;
-      });
+      })
+      .addCase(logoutUser.fulfilled, () => initialState);
   },
 });
 

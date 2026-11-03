@@ -111,3 +111,13 @@ class ReviewAPITests(APITestCase):
         self.client.force_authenticate(user=None)
         response = self.client.get(reverse("reviews:testimonials"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_product_review_list_avoids_n_plus_one_queries(self):
+        for i in range(5):
+            reviewer = _make_user(email=f"rev{i}@example.com")
+            Review.objects.create(product=self.product, user=reviewer, rating=5, comment=f"Review {i}")
+        self.client.force_authenticate(user=None)
+        with self.assertNumQueries(2):
+            response = self.client.get(reverse("reviews:product-review-list", args=[self.product.id]))
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.data["count"], 5)

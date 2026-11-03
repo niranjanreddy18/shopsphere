@@ -15,7 +15,7 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import toast from "react-hot-toast";
 
 import { authApi } from "../../api/authApi";
-import { clearTokens, getAccessToken, setTokens } from "../../utils/tokenStorage";
+import { clearTokens, getAccessToken, getRefreshToken, setTokens } from "../../utils/tokenStorage";
 import { extractErrorMessage } from "../../utils/apiErrors";
 
 const initialState = {
@@ -63,7 +63,7 @@ export const loginUser = createAsyncThunk("auth/login", async (payload, { reject
 
 export const logoutUser = createAsyncThunk("auth/logout", async () => {
   try {
-    const refresh = localStorage.getItem("ecommerce_refresh_token");
+    const refresh = getRefreshToken();
     if (refresh) await authApi.logout(refresh);
   } catch {
     // Even if the server call fails (e.g. token already expired), we still

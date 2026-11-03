@@ -3,6 +3,7 @@
 from decimal import Decimal
 
 from django.db import transaction
+from django.db.models import F
 from django.utils import timezone
 
 from core.exceptions import ApplicationError
@@ -75,5 +76,6 @@ class CouponService:
         placed with a coupon applied.
         """
         usage = CouponUsage.objects.create(coupon=coupon, user=user, discount_amount=discount_amount)
-        Coupon.objects.filter(pk=coupon.pk).update(times_used=coupon.times_used + 1)
+        Coupon.objects.filter(pk=coupon.pk).update(times_used=F("times_used") + 1)
+        coupon.refresh_from_db(fields=["times_used"])
         return usage

@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 
 import { addressApi } from "../../api/addressApi";
 import { extractErrorMessage } from "../../utils/apiErrors";
+import { logoutUser } from "./authSlice";
 
 const initialState = {
   items: [],
@@ -109,6 +110,11 @@ const addressSlice = createSlice({
             ? { ...a, is_default: a.id === action.payload.id }
             : a
         );
+      })
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.items = [];
+        state.status = "idle";
+        state.error = null;
       });
   },
 });

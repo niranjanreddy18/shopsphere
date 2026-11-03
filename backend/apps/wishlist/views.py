@@ -32,7 +32,10 @@ class WishlistListCreateView(generics.ListCreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         item = WishlistService.add_item(user=request.user, product=serializer.validated_data["product"])
-        return Response(WishlistItemSerializer(item).data, status=status.HTTP_201_CREATED)
+        return Response(
+            WishlistItemSerializer(item, context=self.get_serializer_context()).data,
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class WishlistItemDetailView(APIView):

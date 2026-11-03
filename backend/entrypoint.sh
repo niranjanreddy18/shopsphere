@@ -17,8 +17,10 @@ python manage.py wait_for_db
 
 echo "Applying database migrations..."
 python manage.py migrate --noinput
-#echo "passing data to database"
-python manage.py seed_data
+if [ "$SEED_DATA" = "true" ]; then
+    echo "Seeding database with demo catalog..."
+    python manage.py seed_data
+fi
 
 if [ "$MIGRATE_MEDIA_TO_CLOUDINARY" = "true" ]; then
     echo "Running media migration to Cloudinary..."

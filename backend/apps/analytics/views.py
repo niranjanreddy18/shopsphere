@@ -25,6 +25,17 @@ from .serializers import (
 from .services import AnalyticsService
 
 
+def _safe_int_param(request, param_name: str, default: int, min_val: int = 1, max_val: int = 365):
+    raw_val = request.query_params.get(param_name)
+    if raw_val is None or raw_val == "":
+        return default
+    try:
+        val = int(raw_val)
+        return max(min_val, min(val, max_val))
+    except (ValueError, TypeError):
+        return default
+
+
 class DashboardStatsView(APIView):
     """GET /api/v1/analytics/dashboard/ — top-line KPI tiles (admin only)."""
 
@@ -52,7 +63,7 @@ class RevenueAnalyticsView(APIView):
     )
     @method_decorator(cache_page(60))
     def get(self, request):
-        months = int(request.query_params.get("months", 6))
+        months = _safe_int_param(request, "months", default=6, min_val=1, max_val=60)
         return Response(AnalyticsService.get_revenue_analytics(months=months))
 
 
@@ -67,7 +78,7 @@ class OrderTrendsView(APIView):
     )
     @method_decorator(cache_page(60))
     def get(self, request):
-        days = int(request.query_params.get("days", 30))
+        days = _safe_int_param(request, "days", default=30, min_val=1, max_val=365)
         return Response(AnalyticsService.get_order_trends(days=days))
 
 
@@ -85,9 +96,10 @@ class TopProductsView(APIView):
     )
     @method_decorator(cache_page(60))
     def get(self, request):
-        limit = int(request.query_params.get("limit", 10))
+        limit = _safe_int_param(request, "limit", default=10, min_val=1, max_val=100)
         days = request.query_params.get("days")
-        return Response(AnalyticsService.get_top_products(limit=limit, days=int(days) if days else None))
+        parsed_days = _safe_int_param(request, "days", default=None, min_val=1, max_val=3650) if days else None
+        return Response(AnalyticsService.get_top_products(limit=limit, days=parsed_days))
 
 
 class RecentOrdersView(APIView):
@@ -100,6 +112,6 @@ class RecentOrdersView(APIView):
         responses=OrderListSerializer(many=True),
     )
     def get(self, request):
-        limit = int(request.query_params.get("limit", 10))
+        limit = _safe_int_param(request, "limit", default=10, min_val=1, max_val=100)
         orders = AnalyticsService.get_recent_orders(limit=limit)
         return Response(OrderListSerializer(orders, many=True).data)

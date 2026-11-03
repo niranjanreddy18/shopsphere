@@ -6,21 +6,24 @@ for anything that mutates state (stock adjustments, image ordering, etc).
 """
 
 from django.db.models import Avg, Count, Prefetch, Q
+from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django_filters.rest_framework import DjangoFilterBackend
-from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
-from rest_framework import filters, generics, permissions, serializers as drf_serializers, status
+from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework import filters, generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.permissions import IsAdmin
 from .filters import ProductFilter
 from .models import Brand, Category, Inventory, Product, ProductImage, SiteConfiguration, StockMovement
 from .permissions import IsAdminOrReadOnly
 from .serializers import (
     BrandSerializer,
     CategorySerializer,
+    InventoryAdjustSerializer,
     InventorySerializer,
     ProductDetailSerializer,
     ProductImageSerializer,
@@ -32,9 +35,9 @@ from .serializers import (
 )
 from .services import InventoryService, ProductService
 
-# Base queryset shared by every product-listing-style view: only active
-# products, with the FKs/reverse-relations the list serializer needs
-# pre-fetched so pagination doesn't trigger N+1 queries per page.
+# Base queryset shared by every product-listing-style view: with the
+# FKs/reverse-relations the list serializer needs pre-fetched so pagination
+# doesn't trigger N+1 queries per page.
 #
 # `average_rating`/`review_count` are annotated here (one aggregate query
 # per page, computed by the database) rather than each ProductCard making
@@ -42,11 +45,12 @@ from .services import InventoryService, ProductService
 # would otherwise cost one extra round-trip per card on every listing page.
 # Only `is_approved` reviews count, matching what ProductReviewListView
 # already shows publicly (see apps.reviews.views).
-PRODUCT_LIST_QUERYSET = (
-    Product.objects.filter(is_active=True)
+PRODUCT_ALL_LIST_QUERYSET = (
+    Product.objects.all()
     .select_related("category", "brand", "inventory")
     .prefetch_related("images")
     .annotate(
+        effective_price_db=Coalesce("discount_price", "price"),
         average_rating=Avg("reviews__rating", filter=Q(reviews__is_approved=True)),
         review_count=Count("reviews", filter=Q(reviews__is_approved=True)),
     )
@@ -59,6 +63,8 @@ PRODUCT_LIST_QUERYSET = (
     # through the aggregation.
     .order_by("-created_at")
 )
+
+PRODUCT_LIST_QUERYSET = PRODUCT_ALL_LIST_QUERYSET.filter(is_active=True)
 
 
 class CategoryListCreateView(generics.ListCreateAPIView):
@@ -172,10 +178,18 @@ class ProductListCreateView(generics.ListCreateAPIView):
         # the default list entirely, so DjangoFilterBackend must be
         # re-listed explicitly above or `filterset_class` would silently
         # never be applied.
-        qs = PRODUCT_LIST_QUERYSET
         if self.request.user.is_authenticated and self.request.user.is_admin:
-            qs = Product.objects.all().select_related("category", "brand", "inventory").prefetch_related("images")
-        return qs
+            return PRODUCT_ALL_LIST_QUERYSET
+        return PRODUCT_LIST_QUERYSET
+
+    def filter_queryset(self, queryset):
+        ordering_param = self.request.query_params.get("ordering")
+        queryset = super().filter_queryset(queryset)
+        if ordering_param == "price":
+            return queryset.order_by("effective_price_db")
+        if ordering_param == "-price":
+            return queryset.order_by("-effective_price_db")
+        return queryset
 
     @extend_schema(parameters=[OpenApiParameter(name="search", type=str, description="Free-text search query")])
     def list(self, request, *args, **kwargs):
@@ -355,7 +369,7 @@ class SetPrimaryImageView(APIView):
     def post(self, request, pk):
         image = get_object_or_404(ProductImage, pk=pk)
         updated = ProductService.set_primary_image(image=image)
-        return Response(ProductImageSerializer(updated).data)
+        return Response(ProductImageSerializer(updated, context={"request": request}).data)
 
 
 class InventoryAdjustView(APIView):
@@ -368,30 +382,19 @@ class InventoryAdjustView(APIView):
     permission_classes = [IsAdminOrReadOnly]
 
     @extend_schema(
-        request=inline_serializer(
-            "InventoryAdjustRequest",
-            {
-                "quantity_change": drf_serializers.IntegerField(),
-                "movement_type": drf_serializers.ChoiceField(choices=StockMovement.MovementType.choices, required=False),
-                "reason": drf_serializers.CharField(required=False),
-            },
-        ),
+        request=InventoryAdjustSerializer,
         responses=InventorySerializer,
     )
     def post(self, request, slug):
         product = get_object_or_404(Product, slug=slug)
-        quantity_change = request.data.get("quantity_change")
-        movement_type = request.data.get("movement_type", StockMovement.MovementType.ADJUSTMENT)
-        reason = request.data.get("reason", "")
-
-        if quantity_change is None:
-            return Response(
-                {"success": False, "message": "quantity_change is required.", "errors": None},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        serializer = InventoryAdjustSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
         inventory = InventoryService.adjust_stock(
-            product=product, quantity_change=int(quantity_change), movement_type=movement_type, reason=reason
+            product=product,
+            quantity_change=serializer.validated_data["quantity_change"],
+            movement_type=serializer.validated_data["movement_type"],
+            reason=serializer.validated_data["reason"],
         )
         return Response(InventorySerializer(inventory).data, status=status.HTTP_200_OK)
 
@@ -400,7 +403,7 @@ class StockMovementListView(generics.ListAPIView):
     """GET /api/v1/products/<slug>/inventory/movements/ (admin only) — audit trail."""
 
     serializer_class = StockMovementSerializer
-    permission_classes = [IsAdminOrReadOnly]
+    permission_classes = [IsAdmin]
 
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):

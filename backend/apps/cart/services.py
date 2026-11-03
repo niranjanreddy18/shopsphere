@@ -15,6 +15,7 @@ summary is the only place that needs them today.
 """
 
 import logging
+import uuid
 from decimal import Decimal
 
 from django.conf import settings
@@ -78,8 +79,13 @@ class CartService:
             return cart, False
 
         if cart_token:
-            cart, created = Cart.objects.get_or_create(cart_token=cart_token)
-            return cart, False
+            try:
+                parsed_token = uuid.UUID(str(cart_token))
+            except (ValueError, TypeError, AttributeError):
+                parsed_token = None
+            if parsed_token is not None:
+                cart, _ = Cart.objects.get_or_create(cart_token=parsed_token)
+                return cart, False
 
         new_cart = Cart.objects.create(cart_token=Cart.generate_token())
         return new_cart, True
@@ -143,14 +149,29 @@ class CartService:
         """
         user_cart, _ = Cart.objects.get_or_create(user=user)
 
-        for guest_item in guest_cart.items.all():
-            existing = CartItem.objects.filter(cart=user_cart, product=guest_item.product).first()
+        for guest_item in guest_cart.items.select_related("product", "product__inventory"):
+            product = guest_item.product
+            if not product.is_active:
+                continue
+            inventory = getattr(product, "inventory", None)
+            max_available = None
+            if inventory is not None and inventory.track_inventory:
+                max_available = inventory.available_quantity
+                if max_available <= 0:
+                    continue
+
+            existing = CartItem.objects.filter(cart=user_cart, product=product).first()
             if existing:
-                existing.quantity += guest_item.quantity
+                new_qty = existing.quantity + guest_item.quantity
+                if max_available is not None:
+                    new_qty = min(new_qty, max_available)
+                existing.quantity = new_qty
                 existing.save(update_fields=["quantity", "updated_at"])
             else:
                 guest_item.pk = None  # re-insert as a new row bound to user_cart
                 guest_item.cart = user_cart
+                if max_available is not None:
+                    guest_item.quantity = min(guest_item.quantity, max_available)
                 guest_item.save()
 
         guest_cart.delete()

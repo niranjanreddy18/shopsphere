@@ -13,7 +13,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Bell, Heart, LogOut, Menu, Package, ShoppingCart, User } from "lucide-react";
+import { Bell, Heart, LayoutDashboard, LogOut, Menu, Package, ShoppingCart, User } from "lucide-react";
 
 import { useAuth } from "../../hooks/useAuth";
 import { useAppDispatch, useAppSelector } from "../../app/store/hooks";
@@ -122,6 +122,11 @@ function ProfileMenu({ user, onLogout }) {
           <Link to="/orders" onClick={() => setOpen(false)} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-ink-700 hover:bg-ink-50">
             <Package className="h-4 w-4" /> Orders
           </Link>
+          {user?.role === "ADMIN" && (
+            <Link to="/admin" onClick={() => setOpen(false)} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50">
+              <LayoutDashboard className="h-4 w-4" /> Admin Dashboard
+            </Link>
+          )}
           <div className="my-1 border-t border-ink-100" />
           <button
             onClick={() => { setOpen(false); onLogout(); }}
@@ -171,6 +176,13 @@ export default function Header() {
           <CategoriesDropdown />
           <Link to="/products" className="text-sm font-medium text-ink-700 hover:text-brand-700">Products</Link>
           {isAuthenticated && <Link to="/orders" className="text-sm font-medium text-ink-700 hover:text-brand-700">Orders</Link>}
+          {isAuthenticated && user?.role === "ADMIN" && (
+            <Link to="/admin" className="text-sm font-semibold text-brand-600 hover:text-brand-700">Admin</Link>
+          )}
+        </div>
+
+        <div className="hidden flex-1 max-w-md lg:block">
+          <SearchBar />
         </div>
 
         <div className="flex items-center gap-2 lg:gap-3">
@@ -216,6 +228,7 @@ export default function Header() {
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
         isAuthenticated={isAuthenticated}
+        user={user}
         onLogout={handleLogout}
       />
     </header>

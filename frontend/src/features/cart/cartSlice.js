@@ -14,6 +14,8 @@ import toast from "react-hot-toast";
 
 import { cartApi } from "../../api/cartApi";
 import { extractErrorMessage } from "../../utils/apiErrors";
+import { logoutUser } from "../auth/authSlice";
+import { placeOrder } from "../orders/orderSlice";
 
 const initialState = {
   cart: null, // { id, cart_token, items: [], saved_for_later: [], summary: {...} }
@@ -121,6 +123,13 @@ const cartSlice = createSlice({
         state.status = "failed";
         state.error = action.payload;
       })
+      .addCase(placeOrder.fulfilled, (state) => {
+        state.couponCode = null;
+        if (state.cart) {
+          state.cart.items = [];
+        }
+      })
+      .addCase(logoutUser.fulfilled, () => initialState)
       .addMatcher(
         (action) =>
           [addToCart, updateCartItemQuantity, removeCartItem, saveItemForLater, moveItemToCart, mergeGuestCart].some(

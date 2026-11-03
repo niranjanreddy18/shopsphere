@@ -18,7 +18,7 @@ import { Skeleton } from "../../../components/ui/Skeleton";
 import RatingBreakdown from "./RatingBreakdown";
 import WriteReviewForm from "./WriteReviewForm";
 
-export default function ProductReviewsSection({ productId, averageRating, reviewCount }) {
+export default function ProductReviewsSection({ productId, averageRating, reviewCount, onReviewSubmitted }) {
   const { user, isAuthenticated } = useAuth();
   const [reviews, setReviews] = useState([]);
   const [status, setStatus] = useState("loading");
@@ -48,6 +48,7 @@ export default function ProductReviewsSection({ productId, averageRating, review
       await reviewsApi.create(productId, rating, comment);
       toast.success("Thanks for your review!");
       loadReviews();
+      if (onReviewSubmitted) onReviewSubmitted();
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to submit review.");
     } finally {
@@ -60,6 +61,10 @@ export default function ProductReviewsSection({ productId, averageRating, review
       <h2 className="mb-4 text-xl font-bold tracking-tight text-ink-950">Customer Reviews</h2>
 
       {status === "loading" && <Skeleton className="h-24 w-full" />}
+
+      {status === "failed" && (
+        <p className="text-sm text-red-600">Unable to load reviews right now. Please try again later.</p>
+      )}
 
       {status === "succeeded" && (
         <>

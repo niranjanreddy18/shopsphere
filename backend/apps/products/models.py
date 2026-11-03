@@ -19,6 +19,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.utils import timezone
 from django.utils.text import slugify
 
 from core.models import BaseModel
@@ -195,7 +196,7 @@ class RecentlyViewedProduct(BaseModel):
         on_delete=models.CASCADE,
         related_name="recently_viewed_by",
     )
-    viewed_at = models.DateTimeField(auto_now=True)
+    viewed_at = models.DateTimeField(default=timezone.now, db_index=True)
 
     class Meta:
         db_table = "products_recently_viewed_product"

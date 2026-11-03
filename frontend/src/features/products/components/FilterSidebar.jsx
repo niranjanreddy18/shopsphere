@@ -13,8 +13,8 @@ import { fetchBrands, fetchCategories } from "../productSlice";
 
 export default function FilterSidebar({ filters, onChange, onClear }) {
   const dispatch = useAppDispatch();
-  const categories = useAppSelector((state) => state.products.categories.items);
-  const brands = useAppSelector((state) => state.products.brands.items);
+  const { items: categories, status: categoriesStatus } = useAppSelector((state) => state.products.categories);
+  const { items: brands, status: brandsStatus } = useAppSelector((state) => state.products.brands);
 
   const [priceInputs, setPriceInputs] = useState({
     min_price: filters.min_price || "",
@@ -22,9 +22,16 @@ export default function FilterSidebar({ filters, onChange, onClear }) {
   });
 
   useEffect(() => {
-    dispatch(fetchCategories());
-    dispatch(fetchBrands());
-  }, [dispatch]);
+    setPriceInputs({
+      min_price: filters.min_price || "",
+      max_price: filters.max_price || "",
+    });
+  }, [filters.min_price, filters.max_price]);
+
+  useEffect(() => {
+    if (categoriesStatus === "idle") dispatch(fetchCategories());
+    if (brandsStatus === "idle") dispatch(fetchBrands());
+  }, [dispatch, categoriesStatus, brandsStatus]);
 
   const applyPriceFilter = () => {
     onChange({ min_price: priceInputs.min_price || undefined, max_price: priceInputs.max_price || undefined });

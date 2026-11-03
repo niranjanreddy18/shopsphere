@@ -24,7 +24,7 @@ class ProductReviewListView(generics.ListAPIView):
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
             return Review.objects.none()
-        return Review.objects.filter(product_id=self.kwargs["product_id"], is_approved=True).select_related("user")
+        return Review.objects.filter(product_id=self.kwargs["product_id"], is_approved=True).select_related("user", "product")
 
 
 class CreateReviewView(APIView):

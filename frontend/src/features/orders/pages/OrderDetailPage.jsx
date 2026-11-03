@@ -6,6 +6,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import toast from "react-hot-toast";
 
 import { ordersApi } from "../../../api/ordersApi";
 import { useAppDispatch, useAppSelector } from "../../../app/store/hooks";
@@ -42,6 +43,8 @@ export default function OrderDetailPage() {
       link.download = `invoice-${order.order_number}.pdf`;
       link.click();
       window.URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Failed to download invoice. Please try again.");
     } finally {
       setIsDownloading(false);
     }
@@ -80,7 +83,13 @@ export default function OrderDetailPage() {
                 <div key={item.id} className="flex items-center gap-4 py-3 first:pt-0 last:pb-0">
                   <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md bg-gray-100">
                     {item.product_image && (
-                      <img src={item.product_image} alt={item.product_name} className="h-full w-full object-cover" />
+                      <img
+                        src={item.product_image}
+                        alt={item.product_name}
+                        loading="lazy"
+                        decoding="async"
+                        className="h-full w-full object-cover"
+                      />
                     )}
                   </div>
                   <div className="flex-1">

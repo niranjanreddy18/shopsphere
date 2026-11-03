@@ -30,10 +30,10 @@ export default function AdminProductsPage() {
   const [formData, setFormData] = useState(EMPTY_PRODUCT);
   const [search, setSearch] = useState("");
 
-  const loadProducts = () => {
+  const loadProducts = (query = search) => {
     setStatus("loading");
     adminProductsApi
-      .list({ search: search || undefined, page_size: 50 })
+      .list({ search: query || undefined, page_size: 50 })
       .then((data) => {
         setProducts(data.results);
         setStatus("succeeded");
@@ -42,7 +42,10 @@ export default function AdminProductsPage() {
   };
 
   useEffect(() => {
-    loadProducts();
+    const timer = setTimeout(() => {
+      loadProducts(search);
+    }, 300);
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 

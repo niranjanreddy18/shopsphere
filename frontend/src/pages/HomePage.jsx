@@ -1,10 +1,7 @@
 /**
- * HomePage — the full storefront landing page: hero banner, offer
- * banners, category grid, three curated product collections (Featured /
- * Trending / New Arrivals), a brand strip, customer testimonials, and a
- * newsletter CTA. Every section is backed by real data from the existing
- * API (see each section component's own docstring for its data source) —
- * nothing here is static/mock content dressed up as a live section.
+ * HomePage — the storefront landing page: hero banner, category grid,
+ * three curated product collections (Featured / Trending / New Arrivals),
+ * and a brand strip. Every section is backed by live data from the REST API.
  */
 
 import { useEffect } from "react";
@@ -21,10 +18,10 @@ export default function HomePage() {
   const { featured, newArrivals, bestSellers } = useAppSelector((state) => state.products);
 
   useEffect(() => {
-    dispatch(fetchFeaturedProducts({ page_size: 8 }));
-    dispatch(fetchNewArrivals({ page_size: 8 }));
-    dispatch(fetchBestSellers({ page_size: 8 }));
-  }, [dispatch]);
+    if (featured.status === "idle") dispatch(fetchFeaturedProducts({ page_size: 8 }));
+    if (newArrivals.status === "idle") dispatch(fetchNewArrivals({ page_size: 8 }));
+    if (bestSellers.status === "idle") dispatch(fetchBestSellers({ page_size: 8 }));
+  }, [dispatch, featured.status, newArrivals.status, bestSellers.status]);
 
   return (
     <div className="space-y-16 sm:space-y-20">

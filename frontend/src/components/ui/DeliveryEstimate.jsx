@@ -15,7 +15,7 @@ import { Truck } from "lucide-react";
 
 import { getEstimatedDeliveryRange } from "../../utils/deliveryEstimate";
 
-export default function DeliveryEstimate({ freeThreshold = 50, price, compact = false }) {
+export default function DeliveryEstimate({ freeThreshold = 100, price, compact = false }) {
   const qualifiesForFreeShipping = price === undefined || Number(price) >= freeThreshold;
 
   return (

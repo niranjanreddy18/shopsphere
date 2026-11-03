@@ -7,7 +7,7 @@ drf-spectacular can introspect automatically for the Swagger schema.
 """
 
 import django_filters
-from django.db.models import F
+from django.db.models import F, Q
 
 from .models import Product
 
@@ -15,8 +15,8 @@ from .models import Product
 class ProductFilter(django_filters.FilterSet):
     category = django_filters.CharFilter(field_name="category__slug", lookup_expr="exact")
     brand = django_filters.CharFilter(field_name="brand__slug", lookup_expr="exact")
-    min_price = django_filters.NumberFilter(field_name="price", lookup_expr="gte")
-    max_price = django_filters.NumberFilter(field_name="price", lookup_expr="lte")
+    min_price = django_filters.NumberFilter(field_name="effective_price_db", lookup_expr="gte")
+    max_price = django_filters.NumberFilter(field_name="effective_price_db", lookup_expr="lte")
     is_featured = django_filters.BooleanFilter(field_name="is_featured")
     in_stock = django_filters.BooleanFilter(method="filter_in_stock")
 
@@ -34,8 +34,9 @@ class ProductFilter(django_filters.FilterSet):
         """
         if value:
             return queryset.filter(
-                inventory__track_inventory=False
-            ) | queryset.filter(inventory__quantity__gt=F("inventory__reserved_quantity"))
+                Q(inventory__track_inventory=False)
+                | Q(inventory__quantity__gt=F("inventory__reserved_quantity"))
+            )
         return queryset.filter(
             inventory__track_inventory=True,
             inventory__quantity__lte=F("inventory__reserved_quantity"),

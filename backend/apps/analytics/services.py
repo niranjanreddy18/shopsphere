@@ -59,8 +59,10 @@ class AnalyticsService:
             "new_customers_this_month": User.objects.filter(role=User.Role.CUSTOMER, created_at__gte=month_start).count(),
             "total_products": Product.objects.filter(is_active=True).count(),
             "low_stock_count": Product.objects.filter(
-                is_active=True, inventory__track_inventory=True,
-                inventory__quantity__lte=F("inventory__low_stock_threshold"),
+                is_active=True,
+                inventory__track_inventory=True,
+                inventory__quantity__gt=F("inventory__reserved_quantity"),
+                inventory__quantity__lte=F("inventory__reserved_quantity") + F("inventory__low_stock_threshold"),
             ).count(),
         }
 
@@ -135,4 +137,4 @@ class AnalyticsService:
     @staticmethod
     def get_recent_orders(*, limit: int = 10):
         """The most recently placed orders, for the Admin Dashboard's "Recent Orders" panel."""
-        return Order.objects.select_related("user").order_by("-created_at")[:limit]
+        return Order.objects.select_related("user").prefetch_related("items").order_by("-created_at")[:limit]

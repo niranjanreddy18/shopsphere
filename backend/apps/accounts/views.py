@@ -7,6 +7,7 @@ be added directly to a view — see services.py.
 """
 
 from django.contrib.auth import logout as django_logout
+from django.db.models import Count
 from drf_spectacular.utils import OpenApiResponse, extend_schema, inline_serializer
 from rest_framework import filters, generics, permissions, serializers, status
 from rest_framework.response import Response
@@ -132,6 +133,7 @@ class LogoutView(APIView):
         responses={200: OpenApiResponse(description="Logged out successfully.")},
     )
     def post(self, request):
+        refresh_token = request.data.get("refresh")
         if not refresh_token:
             raise ApplicationError("Refresh token is required to log out.", code="missing_token")
 
@@ -367,8 +369,6 @@ class AdminUserListView(generics.ListAPIView):
     search_fields = ["email", "first_name", "last_name"]
 
     def get_queryset(self):
-        from django.db.models import Count
-
         if getattr(self, "swagger_fake_view", False):
             return User.objects.none()
         return (
@@ -385,8 +385,6 @@ class AdminUserDetailView(generics.RetrieveAPIView):
     permission_classes = [IsAdmin]
 
     def get_queryset(self):
-        from django.db.models import Count
-
         return User.objects.filter(role=User.Role.CUSTOMER).annotate(order_count=Count("orders"))
 
 
@@ -402,17 +400,5 @@ class AdminSetUserActiveView(APIView):
         serializer.is_valid(raise_exception=True)
 
         user = AdminUserService.set_active(user=user, is_active=serializer.validated_data["is_active"])
-        from django.db.models import Count
-
         user = User.objects.filter(pk=user.pk).annotate(order_count=Count("orders")).first()
         return Response(AdminUserListSerializer(user).data)
-from django.conf import settings
-from django.http import FileResponse, JsonResponse
-from pathlib import Path
-from django.urls import get_resolver
-def media_debug(request):
-    
-    patterns = [str(p.pattern) for p in get_resolver().url_patterns]
-    return JsonResponse({
-        "patterns": patterns
-    })

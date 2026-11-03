@@ -6,6 +6,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 import { notificationsApi } from "../../api/notificationsApi";
+import { logoutUser } from "../auth/authSlice";
 
 const initialState = {
   items: [],
@@ -44,6 +45,10 @@ const notificationSlice = createSlice({
       })
       .addCase(markAllNotificationsRead.fulfilled, (state) => {
         state.items = state.items.map((n) => ({ ...n, is_read: true }));
+      })
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.items = [];
+        state.status = "idle";
       });
   },
 });

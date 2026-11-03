@@ -6,6 +6,7 @@ OrderService/InvoiceService, and shape the HTTP response.
 """
 
 import django_filters
+from django.db.models import Prefetch
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiResponse, extend_schema
@@ -16,7 +17,7 @@ from rest_framework.views import APIView
 from core.exceptions import ApplicationError
 from core.permissions import IsAdmin
 
-from .models import Order
+from .models import Order, OrderItem, OrderStatusHistory
 from .permissions import IsOrderOwnerOrAdmin
 from .serializers import (
     CancelOrderSerializer,
@@ -85,12 +86,18 @@ class OrderHistoryView(generics.ListAPIView):
         return Order.objects.filter(user=self.request.user).prefetch_related("items")
 
 
+ORDER_DETAIL_QUERYSET = Order.objects.select_related("user").prefetch_related(
+    Prefetch("items", queryset=OrderItem.objects.select_related("product").prefetch_related("product__images")),
+    Prefetch("status_history", queryset=OrderStatusHistory.objects.select_related("changed_by")),
+)
+
+
 class OrderDetailView(generics.RetrieveAPIView):
     """GET /api/v1/orders/<uuid:pk>/ — full order detail (owner or admin)."""
 
     serializer_class = OrderDetailSerializer
     permission_classes = [permissions.IsAuthenticated, IsOrderOwnerOrAdmin]
-    queryset = Order.objects.prefetch_related("items", "status_history").select_related("user")
+    queryset = ORDER_DETAIL_QUERYSET
 
 
 class OrderTrackingView(generics.RetrieveAPIView):
@@ -98,7 +105,7 @@ class OrderTrackingView(generics.RetrieveAPIView):
 
     serializer_class = OrderDetailSerializer  # includes status_history + tracking fields already
     permission_classes = [permissions.IsAuthenticated, IsOrderOwnerOrAdmin]
-    queryset = Order.objects.prefetch_related("status_history")
+    queryset = ORDER_DETAIL_QUERYSET
 
 
 class CancelOrderView(APIView):

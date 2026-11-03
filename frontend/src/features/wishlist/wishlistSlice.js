@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 
 import { wishlistApi } from "../../api/wishlistApi";
 import { extractErrorMessage } from "../../utils/apiErrors";
+import { logoutUser } from "../auth/authSlice";
 
 const initialState = {
   items: [],
@@ -98,6 +99,11 @@ const wishlistSlice = createSlice({
       })
       .addCase(moveWishlistItemToCart.fulfilled, (state, action) => {
         state.items = state.items.filter((item) => item.product.id !== action.payload);
+      })
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.items = [];
+        state.status = "idle";
+        state.error = null;
       });
   },
 });

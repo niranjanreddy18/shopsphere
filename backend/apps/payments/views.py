@@ -94,7 +94,7 @@ class OrderPaymentListView(generics.ListAPIView):
         order = get_object_or_404(Order, pk=self.kwargs["order_id"])
         if order.user_id != self.request.user.id and self.request.user.role != self.request.user.Role.ADMIN:
             return Payment.objects.none()
-        return Payment.objects.filter(order=order)
+        return Payment.objects.filter(order=order).select_related("order")
 
 
 @method_decorator(csrf_exempt, name="dispatch")

@@ -1,6 +1,6 @@
 """Custom validators for the orders domain."""
 
-from django.core.exceptions import ValidationError
+from core.exceptions import ApplicationError
 
 from .models import Order
 
@@ -19,10 +19,11 @@ ALLOWED_TRANSITIONS = {
 
 
 def validate_status_transition(current_status: str, new_status: str) -> None:
-    """Raises ValidationError if `new_status` is not a legal transition from `current_status`."""
+    """Raises ApplicationError if `new_status` is not a legal transition from `current_status`."""
     allowed = ALLOWED_TRANSITIONS.get(current_status, set())
     if new_status not in allowed:
-        raise ValidationError(
+        raise ApplicationError(
             f"Cannot transition order from '{current_status}' to '{new_status}'. "
-            f"Allowed next states: {sorted(allowed) or 'none (terminal status)'}."
+            f"Allowed next states: {sorted(allowed) or 'none (terminal status)'}.",
+            code="invalid_status_transition",
         )

@@ -179,6 +179,7 @@ export default function ProductDetailsPage() {
               productId={product.id}
               averageRating={product.average_rating}
               reviewCount={product.review_count}
+              onReviewSubmitted={() => dispatch(fetchProductDetail(slug))}
             />
           )}
         </div>

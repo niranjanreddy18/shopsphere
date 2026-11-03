@@ -21,12 +21,18 @@ export default function ProductGrid({
     return <ProductGridSkeleton />;
   }
 
-  if (status === "succeeded" && products.length === 0) {
+  if (status === "failed" || products.length === 0) {
     return (
       <EmptyState
         icon={SearchX}
-        title="No products found"
-        message={emptyMessage === "No products found." ? "Try adjusting your filters or search terms." : emptyMessage}
+        title={status === "failed" ? "Unable to load products" : "No products found"}
+        message={
+          status === "failed"
+            ? "Please check your connection and try again."
+            : emptyMessage === "No products found."
+              ? "Try adjusting your filters or search terms."
+              : emptyMessage
+        }
       />
     );
   }

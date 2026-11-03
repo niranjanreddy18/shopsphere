@@ -144,6 +144,8 @@ class AuthService:
             logger.info("Password reset requested for unknown email: %s", email)
             return
 
+        PasswordResetToken.objects.filter(user=user, is_used=False).update(is_used=True)
+
         token = PasswordResetToken.objects.create(user=user)
         EmailService.send_password_reset_email(user, token)
 

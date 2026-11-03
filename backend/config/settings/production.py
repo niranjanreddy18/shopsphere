@@ -41,6 +41,7 @@ CSRF_TRUSTED_ORIGINS = config(
 )
 
 # CORS must be an explicit allow-list in production — no wildcards.
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", cast=Csv())
 
 # ------------------------------------------------------------------------------

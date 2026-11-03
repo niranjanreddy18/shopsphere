@@ -17,7 +17,6 @@ import {
   setCouponCode,
   updateCartItemQuantity,
 } from "../cartSlice";
-import { couponApi } from "../../../api/couponApi";
 import CartItemRow from "../components/CartItemRow";
 import CartSummary from "../components/CartSummary";
 import { CartItemSkeleton } from "../../../components/ui/Skeleton";
@@ -33,19 +32,9 @@ export default function CartPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch]);
 
-  const handleApplyCoupon = async (code) => {
-    // Validate first so an invalid code never gets persisted into the
-    // cart-summary request — ValidateCouponView gives a precise error
-    // message (expired/min-order-not-met/etc.) that CartSummarySerializer's
-    // generic `coupon_error` field alone wouldn't distinguish as clearly.
-    try {
-      await couponApi.validate(code, cart?.summary?.subtotal ?? "0");
-      dispatch(setCouponCode(code));
-      dispatch(fetchCart(code));
-    } catch {
-      dispatch(setCouponCode(code));
-      dispatch(fetchCart(code)); // still fetch — summary.coupon_error will surface the reason
-    }
+  const handleApplyCoupon = (code) => {
+    dispatch(setCouponCode(code));
+    dispatch(fetchCart(code));
   };
 
   const handleRemoveCoupon = () => {

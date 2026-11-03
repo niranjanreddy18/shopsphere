@@ -16,6 +16,7 @@ Design decision:
 
 import logging
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.views import exception_handler as drf_exception_handler
 
 logger = logging.getLogger("apps")
@@ -54,6 +55,17 @@ def custom_exception_handler(exc, context):
         return Response(
             {"success": False, "message": exc.message, "errors": None},
             status=exc.status_code,
+        )
+
+    if isinstance(exc, DjangoValidationError):
+        logger.warning("ValidationError: %s", exc)
+        from rest_framework.response import Response
+
+        errors = exc.message_dict if hasattr(exc, "message_dict") else {"detail": exc.messages}
+        message = exc.messages[0] if getattr(exc, "messages", None) else "Validation failed"
+        return Response(
+            {"success": False, "message": message, "errors": errors},
+            status=400,
         )
 
     response = drf_exception_handler(exc, context)

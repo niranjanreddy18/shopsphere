@@ -13,7 +13,7 @@ from apps.coupons.models import Coupon
 from apps.products.models import Category, Inventory, Product
 from core.exceptions import ApplicationError
 
-from .models import Order, OrderStatusHistory
+from .models import Order, OrderItem, OrderStatusHistory
 from .services import InvoiceService, OrderService
 from .validators import validate_status_transition
 
@@ -77,15 +77,11 @@ class StatusTransitionValidatorTests(TestCase):
         validate_status_transition(Order.Status.PENDING, Order.Status.CONFIRMED)
 
     def test_illegal_transition_raises(self):
-        from django.core.exceptions import ValidationError
-
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ApplicationError):
             validate_status_transition(Order.Status.PENDING, Order.Status.SHIPPED)
 
     def test_terminal_status_has_no_further_transitions(self):
-        from django.core.exceptions import ValidationError
-
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ApplicationError):
             validate_status_transition(Order.Status.CANCELLED, Order.Status.PENDING)
 
 
@@ -197,7 +193,7 @@ class OrderServiceLifecycleTests(TestCase):
 
     def test_cancel_already_cancelled_order_raises(self):
         OrderService.cancel_order(order=self.order, cancelled_by=self.user)
-        with self.assertRaises(Exception):
+        with self.assertRaises(ApplicationError):
             OrderService.cancel_order(order=self.order, cancelled_by=self.user)
 
     def test_update_status_records_history(self):
@@ -336,3 +332,30 @@ class AdminOrderManagementAPITests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["tracking_number"], "1Z999")
+
+    def test_admin_invalid_status_transition_returns_400_instead_of_500(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.patch(
+            reverse("orders:admin-order-status", args=[self.order.id]),
+            {"status": "DELIVERED"},
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(response.data["success"])
+
+    def test_order_detail_query_count_avoids_n_plus_one(self):
+        for i in range(4):
+            extra_product = _make_product(name=f"Extra {i}", sku=f"SKU-EX-{i}", stock=10)
+            OrderItem.objects.create(
+                order=self.order,
+                product=extra_product,
+                product_name=extra_product.name,
+                product_sku=extra_product.sku,
+                unit_price=extra_product.price,
+                quantity=1,
+                line_total=extra_product.price,
+            )
+        self.client.force_authenticate(user=self.user)
+        with self.assertNumQueries(4):
+            response = self.client.get(reverse("orders:order-detail", args=[self.order.id]))
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(len(response.data["items"]), 5)

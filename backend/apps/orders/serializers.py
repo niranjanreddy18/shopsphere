@@ -24,7 +24,8 @@ class OrderItemSerializer(serializers.ModelSerializer):
     def get_product_image(self, obj):
         if obj.product is None:
             return None
-        primary = obj.product.images.filter(is_primary=True).first() or obj.product.images.first()
+        images = list(obj.product.images.all())
+        primary = next((img for img in images if img.is_primary), None) or (images[0] if images else None)
         if not primary:
             return None
         url = primary.resolved_url

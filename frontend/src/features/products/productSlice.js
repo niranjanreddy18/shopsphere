@@ -126,6 +126,9 @@ const productSlice = createSlice({
         state.related.status = "succeeded";
         state.related.items = action.payload;
       })
+      .addCase(fetchRelatedProducts.rejected, (state) => {
+        state.related.status = "failed";
+      })
       // --- curated collections ---------------------------------------------
       .addCase(fetchFeaturedProducts.pending, (state) => {
         state.featured.status = "loading";
@@ -134,12 +137,18 @@ const productSlice = createSlice({
         state.featured.status = "succeeded";
         state.featured.items = action.payload;
       })
+      .addCase(fetchFeaturedProducts.rejected, (state) => {
+        state.featured.status = "failed";
+      })
       .addCase(fetchNewArrivals.pending, (state) => {
         state.newArrivals.status = "loading";
       })
       .addCase(fetchNewArrivals.fulfilled, (state, action) => {
         state.newArrivals.status = "succeeded";
         state.newArrivals.items = action.payload;
+      })
+      .addCase(fetchNewArrivals.rejected, (state) => {
+        state.newArrivals.status = "failed";
       })
       .addCase(fetchBestSellers.pending, (state) => {
         state.bestSellers.status = "loading";
@@ -148,14 +157,29 @@ const productSlice = createSlice({
         state.bestSellers.status = "succeeded";
         state.bestSellers.items = action.payload;
       })
+      .addCase(fetchBestSellers.rejected, (state) => {
+        state.bestSellers.status = "failed";
+      })
       // --- filter lookups --------------------------------------------------
+      .addCase(fetchCategories.pending, (state) => {
+        state.categories.status = "loading";
+      })
       .addCase(fetchCategories.fulfilled, (state, action) => {
         state.categories.status = "succeeded";
         state.categories.items = action.payload;
       })
+      .addCase(fetchCategories.rejected, (state) => {
+        state.categories.status = "failed";
+      })
+      .addCase(fetchBrands.pending, (state) => {
+        state.brands.status = "loading";
+      })
       .addCase(fetchBrands.fulfilled, (state, action) => {
         state.brands.status = "succeeded";
         state.brands.items = action.payload;
+      })
+      .addCase(fetchBrands.rejected, (state) => {
+        state.brands.status = "failed";
       });
   },
 });

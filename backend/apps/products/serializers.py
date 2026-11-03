@@ -80,25 +80,40 @@ class BrandSerializer(serializers.ModelSerializer):
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
-    # Exposed as a single resolved URL string regardless of whether the
-    # underlying row has an uploaded `image` file or an `external_url` —
-    # see ProductImage.resolved_url's docstring. Read-only here: writes
-    # still target the underlying `image`/`external_url` fields directly
-    # (see ProductImageUploadSerializer used by the admin upload endpoint).
-    image = serializers.SerializerMethodField()
+    # Exposed as a single resolved URL string on read regardless of whether
+    # the underlying row has an uploaded `image` file or an `external_url`.
+    image = serializers.ImageField(required=False, allow_null=True)
+    external_url = serializers.URLField(required=False, allow_blank=True, write_only=True)
 
     class Meta:
         model = ProductImage
-        fields = ["id", "image", "alt_text", "is_primary", "display_order"]
+        fields = ["id", "image", "external_url", "alt_text", "is_primary", "display_order"]
         read_only_fields = ["id"]
 
-    @extend_schema_field(serializers.CharField(allow_null=True))
-    def get_image(self, obj):
+    def validate(self, attrs):
+        if self.instance is None and not attrs.get("image") and not attrs.get("external_url"):
+            raise serializers.ValidationError("Provide either an uploaded image or an external_url.")
+        return attrs
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
         request = self.context.get("request")
-        url = obj.resolved_url
+        url = instance.resolved_url
         if not url:
-            return None
-        return request.build_absolute_uri(url) if request and url.startswith("/") else url
+            data["image"] = None
+        else:
+            data["image"] = request.build_absolute_uri(url) if request and url.startswith("/") else url
+        return data
+
+
+class InventoryAdjustSerializer(serializers.Serializer):
+    quantity_change = serializers.IntegerField()
+    movement_type = serializers.ChoiceField(
+        choices=StockMovement.MovementType.choices,
+        default=StockMovement.MovementType.ADJUSTMENT,
+        required=False,
+    )
+    reason = serializers.CharField(required=False, allow_blank=True, default="", max_length=255)
 
 
 class InventorySerializer(serializers.ModelSerializer):

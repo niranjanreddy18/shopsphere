@@ -15,7 +15,10 @@ from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import CartItem
+import uuid
+
+from core.exceptions import ApplicationError
+from .models import Cart, CartItem
 from .serializers import AddCartItemSerializer, CartSerializer, UpdateCartItemSerializer
 from .services import CartService
 
@@ -146,9 +149,12 @@ class MergeGuestCartView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        from .models import Cart
+        try:
+            parsed_token = uuid.UUID(str(cart_token))
+        except (ValueError, TypeError, AttributeError) as exc:
+            raise ApplicationError("Invalid cart_token format.", code="invalid_cart_token") from exc
 
-        guest_cart = Cart.objects.filter(cart_token=cart_token).first()
+        guest_cart = Cart.objects.filter(cart_token=parsed_token).first()
         if guest_cart is None:
             # Nothing to merge — not an error, the user simply has no guest cart.
             user_cart, _ = CartService.get_or_create_cart(user=request.user)

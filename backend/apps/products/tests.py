@@ -406,6 +406,14 @@ class ProductAPITests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_stock_movements_requires_admin(self):
+        url = reverse("products:inventory-movements", args=[self.product.slug])
+        self.assertEqual(self.client.get(url).status_code, status.HTTP_401_UNAUTHORIZED)
+        self.client.force_authenticate(user=self.customer)
+        self.assertEqual(self.client.get(url).status_code, status.HTTP_403_FORBIDDEN)
+        self.client.force_authenticate(user=self.admin)
+        self.assertEqual(self.client.get(url).status_code, status.HTTP_200_OK)
+
     def test_product_list_query_count_avoids_n_plus_one_inventory(self):
         for i in range(10):
             _make_product(self.category, name=f"Bulk Product {i}", brand=self.brand, stock=10)

@@ -331,3 +331,37 @@ class AdminCustomerManagementAPITests(APITestCase):
             reverse("accounts:login"), {"email": "customer@example.com", "password": "StrongPass1!"}
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_logout_successfully_blacklists_refresh_token(self):
+        tokens = AuthService.issue_tokens_for_user(self.customer)
+        self.client.force_authenticate(user=self.customer)
+        response = self.client.post(reverse("accounts:logout"), {"refresh": tokens["refresh"]})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["success"])
+
+        # Attempting to refresh with the blacklisted token must fail
+        refresh_response = self.client.post(reverse("accounts:token-refresh"), {"refresh": tokens["refresh"]})
+        self.assertEqual(refresh_response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_logout_without_refresh_token_fails(self):
+        self.client.force_authenticate(user=self.customer)
+        response = self.client.post(reverse("accounts:logout"), {})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_health_check_endpoint_returns_ok(self):
+        response = self.client.get("/health/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()["status"], "healthy")
+        self.assertEqual(response.json()["services"]["database"], "healthy")
+
+    def test_subsequent_password_reset_invalidates_prior_tokens(self):
+        AuthService.request_password_reset(email=self.customer.email)
+        first_token = PasswordResetToken.objects.filter(user=self.customer).first()
+        self.assertFalse(first_token.is_used)
+
+        AuthService.request_password_reset(email=self.customer.email)
+        first_token.refresh_from_db()
+        self.assertTrue(first_token.is_used)
+        latest_token = PasswordResetToken.objects.filter(user=self.customer, is_used=False).first()
+        self.assertIsNotNone(latest_token)
+        self.assertNotEqual(first_token.token, latest_token.token)
