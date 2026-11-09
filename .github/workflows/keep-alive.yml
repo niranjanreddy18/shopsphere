@@ -1,0 +1,13 @@
+name: Render Backend Keep Alive
+
+on:
+  schedule:
+    - cron: "*/3 * * * *"
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Render backend health
+        run: curl -fS --max-time 30 https://shopsphere-1-dkey.onrender.com/health/
