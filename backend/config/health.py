@@ -55,7 +55,7 @@ def health_check(request):
     except Exception as exc:
         logger.warning("Health check: cache connection degraded: %s", exc)
         services["cache"] = "degraded"
-
+    print("✅ Health check successful")
     http_status = 200 if healthy else 503
     return JsonResponse(
         {
