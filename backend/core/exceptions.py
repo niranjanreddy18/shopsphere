@@ -39,6 +39,38 @@ class ApplicationError(Exception):
         super().__init__(message)
 
 
+def _extract_first_error_message(data) -> str | None:
+    """
+    Walks a DRF or Django validation error payload (list, dict, or ErrorDetail)
+    and returns the first human-readable message so the top-level `message`
+    field is specific rather than a generic "Validation failed".
+    """
+    if isinstance(data, list):
+        for item in data:
+            msg = _extract_first_error_message(item)
+            if msg:
+                return msg
+        return None
+
+    if isinstance(data, dict):
+        for priority_key in ("non_field_errors", "detail"):
+            if priority_key in data:
+                msg = _extract_first_error_message(data[priority_key])
+                if msg:
+                    return msg
+        for value in data.values():
+            msg = _extract_first_error_message(value)
+            if msg:
+                return msg
+        return None
+
+    if data is not None:
+        text = str(data).strip()
+        return text or None
+
+    return None
+
+
 def custom_exception_handler(exc, context):
     """
     Wraps DRF's default exception handler to normalise the response body.
@@ -62,7 +94,7 @@ def custom_exception_handler(exc, context):
         from rest_framework.response import Response
 
         errors = exc.message_dict if hasattr(exc, "message_dict") else {"detail": exc.messages}
-        message = exc.messages[0] if getattr(exc, "messages", None) else "Validation failed"
+        message = _extract_first_error_message(errors) or "Validation failed"
         return Response(
             {"success": False, "message": message, "errors": errors},
             status=400,
@@ -73,7 +105,8 @@ def custom_exception_handler(exc, context):
     if response is not None:
         # Normalise DRF's validation error shape into our standard envelope.
         errors = response.data if isinstance(response.data, dict) else {"detail": response.data}
-        message = "Validation failed" if response.status_code == 400 else "Request failed"
+        fallback = "Validation failed" if response.status_code == 400 else "Request failed"
+        message = _extract_first_error_message(errors) or fallback
 
         response.data = {
             "success": False,

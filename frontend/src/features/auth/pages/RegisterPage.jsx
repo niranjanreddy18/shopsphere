@@ -11,6 +11,7 @@
  * server-side messages, e.g. "email already registered," still surface).
  */
 
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { Check, X } from "lucide-react";
@@ -19,20 +20,32 @@ import TextInput from "../../../components/ui/TextInput";
 import Button from "../../../components/ui/Button";
 import PasswordStrengthMeter from "../../../components/ui/PasswordStrengthMeter";
 import { useAppDispatch } from "../../../app/store/hooks";
-import { registerUser } from "../authSlice";
+import { clearAuthError, registerUser } from "../authSlice";
 import { ROUTES } from "../../../constants/routes";
 
 const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>_\-+=]).{8,}$/;
+const REGISTER_FIELDS = new Set([
+  "first_name",
+  "last_name",
+  "email",
+  "phone_number",
+  "password",
+  "password_confirm",
+]);
 
 export default function RegisterPage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const [serverError, setServerError] = useState(null);
   const {
     register,
     handleSubmit,
+    setError,
     watch,
     formState: { errors, isSubmitting, touchedFields },
   } = useForm({ mode: "onChange" });
+
+  useEffect(() => () => dispatch(clearAuthError()), [dispatch]);
 
   const password = watch("password") || "";
   const passwordConfirm = watch("password_confirm") || "";
@@ -40,9 +53,29 @@ export default function RegisterPage() {
   const passwordsMatch = password === passwordConfirm;
 
   const onSubmit = async (formData) => {
+    setServerError(null);
     const result = await dispatch(registerUser(formData));
     if (registerUser.fulfilled.match(result)) {
       navigate(ROUTES.LOGIN);
+      return;
+    }
+
+    if (registerUser.rejected.match(result)) {
+      const payload = result.payload;
+      const message = typeof payload === "string" ? payload : payload?.message;
+      const fieldErrors = (typeof payload === "object" && payload?.fieldErrors) || {};
+
+      let hasFieldError = false;
+      for (const [field, errorMsg] of Object.entries(fieldErrors)) {
+        if (REGISTER_FIELDS.has(field)) {
+          setError(field, { type: "server", message: errorMsg }, { shouldFocus: !hasFieldError });
+          hasFieldError = true;
+        }
+      }
+
+      if (!hasFieldError && message) {
+        setServerError(message);
+      }
     }
   };
 
@@ -129,6 +162,15 @@ export default function RegisterPage() {
             {passwordsMatch ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
             {passwordsMatch ? "Passwords match" : "Passwords do not match"}
           </p>
+        )}
+
+        {serverError && (
+          <div
+            role="alert"
+            className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-700"
+          >
+            {serverError}
+          </div>
         )}
 
         <Button type="submit" isLoading={isSubmitting} className="mt-2 w-full py-3">

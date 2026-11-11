@@ -181,6 +181,8 @@ class AuthAPITests(APITestCase):
         }
         response = self.client.post(self.register_url, payload)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["message"], "Passwords do not match.")
+        self.assertIn("password_confirm", response.data["errors"])
 
     def test_register_with_duplicate_email_fails(self):
         User.objects.create_user(email="dupe@example.com", password="StrongPass1!", first_name="A", last_name="B")
@@ -193,6 +195,21 @@ class AuthAPITests(APITestCase):
         }
         response = self.client.post(self.register_url, payload)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["message"], "An account with this email already exists.")
+        self.assertIn("email", response.data["errors"])
+
+    def test_register_with_weak_password_returns_specific_message(self):
+        payload = {
+            "email": "weak@example.com",
+            "first_name": "A",
+            "last_name": "B",
+            "password": "password",
+            "password_confirm": "password",
+        }
+        response = self.client.post(self.register_url, payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertNotEqual(response.data["message"], "Validation failed")
+        self.assertIn("password", response.data["errors"])
 
     def test_login_success_returns_tokens(self):
         User.objects.create_user(email="login@example.com", password="StrongPass1!", first_name="A", last_name="B")
@@ -205,6 +222,7 @@ class AuthAPITests(APITestCase):
         User.objects.create_user(email="login2@example.com", password="StrongPass1!", first_name="A", last_name="B")
         response = self.client.post(self.login_url, {"email": "login2@example.com", "password": "WrongPass1!"})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["message"], "Invalid email or password.")
 
     def test_login_with_disabled_account_shows_specific_message(self):
         user = User.objects.create_user(
@@ -216,7 +234,7 @@ class AuthAPITests(APITestCase):
         response = self.client.post(self.login_url, {"email": "disabled@example.com", "password": "StrongPass1!"})
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("disabled", str(response.data).lower())
+        self.assertIn("disabled", response.data["message"].lower())
 
     def test_login_with_wrong_password_on_disabled_account_stays_generic(self):
         # A disabled account with the WRONG password should not confirm

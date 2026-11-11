@@ -6,31 +6,58 @@
  * profile page for a direct /login visit.
  */
 
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import TextInput from "../../../components/ui/TextInput";
 import Button from "../../../components/ui/Button";
 import { useAppDispatch } from "../../../app/store/hooks";
-import { loginUser } from "../authSlice";
+import { clearAuthError, loginUser } from "../authSlice";
 import { ROUTES } from "../../../constants/routes";
+
+const LOGIN_FIELDS = new Set(["email", "password"]);
 
 export default function LoginPage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  const [serverError, setServerError] = useState(null);
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm({ defaultValues: { rememberMe: true } });
+
+  useEffect(() => () => dispatch(clearAuthError()), [dispatch]);
 
   const redirectTo = location.state?.from?.pathname || ROUTES.PROFILE;
 
   const onSubmit = async (formData) => {
+    setServerError(null);
     const result = await dispatch(loginUser(formData));
     if (loginUser.fulfilled.match(result)) {
       navigate(redirectTo, { replace: true });
+      return;
+    }
+
+    if (loginUser.rejected.match(result)) {
+      const payload = result.payload;
+      const message = typeof payload === "string" ? payload : payload?.message;
+      const fieldErrors = (typeof payload === "object" && payload?.fieldErrors) || {};
+
+      let hasFieldError = false;
+      for (const [field, errorMsg] of Object.entries(fieldErrors)) {
+        if (LOGIN_FIELDS.has(field)) {
+          setError(field, { type: "server", message: errorMsg }, { shouldFocus: !hasFieldError });
+          hasFieldError = true;
+        }
+      }
+
+      if (!hasFieldError && message) {
+        setServerError(message);
+      }
     }
   };
 
@@ -49,6 +76,7 @@ export default function LoginPage() {
           {...register("email", {
             required: "Email is required.",
             pattern: { value: /^\S+@\S+\.\S+$/, message: "Enter a valid email address." },
+            onChange: () => setServerError(null),
           })}
         />
 
@@ -58,7 +86,10 @@ export default function LoginPage() {
           label="Password"
           autoComplete="current-password"
           error={errors.password?.message}
-          {...register("password", { required: "Password is required." })}
+          {...register("password", {
+            required: "Password is required.",
+            onChange: () => setServerError(null),
+          })}
         />
 
         <div className="mb-6 flex items-center justify-between">
@@ -74,6 +105,15 @@ export default function LoginPage() {
             Forgot password?
           </Link>
         </div>
+
+        {serverError && (
+          <div
+            role="alert"
+            className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-700"
+          >
+            {serverError}
+          </div>
+        )}
 
         <Button type="submit" isLoading={isSubmitting} className="w-full py-3">
           Sign in

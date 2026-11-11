@@ -26,6 +26,57 @@
  *      before (prefer `message`, fall back to the first field-level error).
  */
 
+const GENERIC_ENVELOPE_MESSAGES = new Set(["Validation failed", "Request failed"]);
+
+function extractFirstError(value) {
+  if (!value) return null;
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const msg = extractFirstError(item);
+      if (msg) return msg;
+    }
+    return null;
+  }
+  if (typeof value === "object") {
+    if (value.non_field_errors) {
+      const msg = extractFirstError(value.non_field_errors);
+      if (msg) return msg;
+    }
+    if (value.detail) {
+      const msg = extractFirstError(value.detail);
+      if (msg) return msg;
+    }
+    for (const fieldValue of Object.values(value)) {
+      const msg = extractFirstError(fieldValue);
+      if (msg) return msg;
+    }
+    return null;
+  }
+  return String(value);
+}
+
+/**
+ * Extracts field-level error messages from `{ errors: { field: [...] } }`,
+ * excluding non-field keys (`non_field_errors`, `detail`).
+ */
+export function extractFieldErrors(error) {
+  const errors = error?.response?.data?.errors;
+  if (!errors || typeof errors !== "object" || Array.isArray(errors)) {
+    return {};
+  }
+
+  const fieldErrors = {};
+  for (const [field, value] of Object.entries(errors)) {
+    if (field === "non_field_errors" || field === "detail") continue;
+    const msg = extractFirstError(value);
+    if (msg) {
+      fieldErrors[field] = msg;
+    }
+  }
+  return fieldErrors;
+}
+
 export function extractErrorMessage(error, fallback) {
   if (!error?.response) {
     return "Network error — please check your internet connection and try again.";
@@ -37,10 +88,17 @@ export function extractErrorMessage(error, fallback) {
 
   const data = error.response.data;
   if (!data) return fallback;
-  if (data.message) return data.message;
+  if (data.message && !GENERIC_ENVELOPE_MESSAGES.has(data.message)) {
+    return data.message;
+  }
   if (data.errors) {
-    const firstField = Object.values(data.errors)[0];
-    return Array.isArray(firstField) ? firstField[0] : String(firstField);
+    const fieldMessage = extractFirstError(data.errors);
+    if (fieldMessage) return fieldMessage;
+  }
+  if (data.message) return data.message;
+  if (data.detail) {
+    const detailMessage = extractFirstError(data.detail);
+    if (detailMessage) return detailMessage;
   }
   return fallback;
 }

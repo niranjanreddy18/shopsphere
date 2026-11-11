@@ -48,6 +48,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     (matching passwords, strong password, unique email).
     """
 
+    email = serializers.EmailField()
     password = serializers.CharField(write_only=True, min_length=8)
     password_confirm = serializers.CharField(write_only=True, min_length=8)
 

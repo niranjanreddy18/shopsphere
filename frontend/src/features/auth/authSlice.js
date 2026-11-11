@@ -16,7 +16,7 @@ import toast from "react-hot-toast";
 
 import { authApi } from "../../api/authApi";
 import { clearTokens, getAccessToken, getRefreshToken, setTokens } from "../../utils/tokenStorage";
-import { extractErrorMessage } from "../../utils/apiErrors";
+import { extractErrorMessage, extractFieldErrors } from "../../utils/apiErrors";
 
 const initialState = {
   user: null,
@@ -40,8 +40,9 @@ export const registerUser = createAsyncThunk("auth/register", async (payload, { 
     return data.user;
   } catch (error) {
     const message = extractErrorMessage(error, "Registration failed.");
+    const fieldErrors = extractFieldErrors(error);
     toast.error(message);
-    return rejectWithValue(message);
+    return rejectWithValue({ message, fieldErrors });
   }
 });
 
@@ -56,8 +57,9 @@ export const loginUser = createAsyncThunk("auth/login", async (payload, { reject
     return data.user;
   } catch (error) {
     const message = extractErrorMessage(error, "Login failed.");
+    const fieldErrors = extractFieldErrors(error);
     toast.error(message);
-    return rejectWithValue(message);
+    return rejectWithValue({ message, fieldErrors });
   }
 });
 
@@ -163,7 +165,8 @@ const authSlice = createSlice({
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.status = "failed";
-        state.error = action.payload;
+        state.error =
+          typeof action.payload === "string" ? action.payload : action.payload?.message || null;
       })
       // --- login --------------------------------------------------------
       .addCase(loginUser.pending, (state) => {
@@ -177,7 +180,8 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.status = "failed";
-        state.error = action.payload;
+        state.error =
+          typeof action.payload === "string" ? action.payload : action.payload?.message || null;
         state.isAuthenticated = false;
       })
       // --- logout -------------------------------------------------------
