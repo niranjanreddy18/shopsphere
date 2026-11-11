@@ -1,4 +1,4 @@
-name: Render Backend Keep Alive
+cname: Render Backend Keep Alive
 
 on:
   schedule:
@@ -8,6 +8,21 @@ on:
 jobs:
   health-check:
     runs-on: ubuntu-latest
+
     steps:
       - name: Check Render backend health
-        run: curl -fS --max-time 30 https://shopsphere-1-dkey.onrender.com/health/
+        env:
+          RENDER_HEALTH_URL: https://shopsphere-1-dkey.onrender.com/health/
+        run: |
+          echo "🏥 Sending health check to Render..."
+          echo "🌐 URL: $RENDER_HEALTH_URL"
+
+          curl -fS \
+            --connect-timeout 15 \
+            --max-time 30 \
+            --retry 3 \
+            --retry-delay 5 \
+            --retry-all-errors \
+            "$RENDER_HEALTH_URL"
+
+          echo "✅ Health check successful"
